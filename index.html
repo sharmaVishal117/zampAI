@@ -216,6 +216,29 @@ main .cols{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap
 .reason-item .r-sub{font-size:11.5px;color:var(--muted);margin-top:2px;font-family:var(--mono)}
 .reason-empty{padding:18px;text-align:center;color:var(--muted);font:12px var(--mono);letter-spacing:.3px}
 
+/* "what we found on this invoice" key/value grid */
+.found-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line-soft);
+  border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.found-item{background:var(--panel-2);padding:12px 14px}
+.found-item .k{font:600 10.5px var(--mono);letter-spacing:.4px;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
+.found-item .v{font:500 14px var(--sans);color:var(--ink);word-break:break-word}
+.found-item .v.mono{font:500 13px var(--mono)}
+.found-item.wide{grid-column:1/-1}
+.found-item .sub{font:11px var(--sans);color:var(--muted);margin-top:3px}
+.not-itemized{font:500 12.5px var(--sans);color:var(--ink-2)}
+
+/* audit (per-invoice) compact hero + trail */
+.audit-hero{padding:16px 20px;margin-bottom:14px}
+.audit-hero .hero-title{font-size:24px;margin-top:9px}
+.audit-hero .hero-sub{font-size:12.5px;max-width:64ch}
+.trail{margin-top:14px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel)}
+.trail summary{list-style:none;cursor:pointer;padding:12px 16px;font:600 11px var(--mono);letter-spacing:.6px;
+  text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px;user-select:none}
+.trail summary::-webkit-details-marker{display:none}
+.trail summary::after{content:"▸";margin-left:auto;color:var(--muted);transition:transform .15s}
+.trail[open] summary::after{transform:rotate(90deg)}
+.trail .trail-body{max-height:260px;overflow:auto}
+
 /* matched PO */
 .po-grid{background:var(--panel-2);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .po-row{display:grid;grid-template-columns:1fr auto;gap:10px;padding:10px 15px;font-size:12.5px;align-items:center}
@@ -512,6 +535,70 @@ table.mini th{font-size:10.5px}
     </button>
   </section>
 
+  <!-- ============ INVOICE AUDIT (per-invoice detail page) ============ -->
+  <section id="view-audit" class="hidden">
+    <button class="btn ghost" style="margin-bottom:14px" onclick="show('dash')">← Run history</button>
+
+    <!-- compact decision banner -->
+    <div class="hero audit-hero" id="audit-hero">
+      <div>
+        <div class="hero-line1">
+          <span class="hero-badge" id="audit-badge">—</span>
+          <span class="hero-meta" id="audit-meta"></span>
+        </div>
+        <div class="hero-title" id="audit-title">—</div>
+        <div class="hero-sub" id="audit-sub"></div>
+      </div>
+      <div class="hero-actions">
+        <button class="btn primary" onclick="auditNext()">Process another</button>
+        <button class="btn ghost" onclick="show('dash')">Dashboard</button>
+      </div>
+    </div>
+
+    <!-- source document | found + reasoning + matched PO -->
+    <div class="cols">
+      <div class="info-block">
+        <h3 class="sec-label">Source document</h3>
+        <div class="doc-frame">
+          <div class="doc-bar">
+            <span class="doc-fn" id="audit-doc-fn">—</span>
+            <div class="doc-tools">
+              <button class="vbtn" aria-label="zoom out" onclick="auditZoom(-1)" title="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="7" x2="12" y2="17"/><line x1="7" y1="12" x2="17" y2="12"/></svg></button>
+              <button class="vbtn" aria-label="zoom in" onclick="auditZoom(1)" title="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+              <span class="doc-pageno"><span class="cur" id="audit-page-cur">1</span> of <span id="audit-page-total">1</span></span>
+            </div>
+          </div>
+          <div class="doc-canvas" id="audit-doc-canvas">
+            <div class="doc-empty">NO DOCUMENT</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-stack">
+        <div class="info-block">
+          <h3 class="sec-label">What we found on this invoice</h3>
+          <div class="found-grid" id="audit-found"></div>
+        </div>
+        <div class="info-block">
+          <h3 class="sec-label">Reasoning log</h3>
+          <div class="reason" id="audit-reason"></div>
+        </div>
+        <div class="info-block">
+          <h3 class="sec-label">Matched PO</h3>
+          <div class="po-grid" id="audit-po"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- collapsible raw audit trail -->
+    <details class="trail">
+      <summary>Audit trail — raw events</summary>
+      <div class="trail-body"><div class="terminal" style="margin:0;border-radius:0">
+        <div class="tl-body" id="audit-trail-body"></div>
+      </div></div>
+    </details>
+  </section>
+
   <!-- ============ DASHBOARD ============ -->
   <section id="view-dash" class="hidden">
     <div class="kpis">
@@ -581,10 +668,13 @@ function updateThemeUI(t){
 
 // ------------------------------------------------------------- views
 function show(v){
-  document.getElementById('view-run').classList.toggle('hidden', v!=='run');
-  document.getElementById('view-dash').classList.toggle('hidden', v!=='dash');
-  document.getElementById('tab-run').classList.toggle('active', v==='run');
-  document.getElementById('tab-dash').classList.toggle('active', v==='dash');
+  ['run','dash','audit'].forEach(k=>{
+    const el=document.getElementById('view-'+k);
+    if (el) el.classList.toggle('hidden', v!==k);
+  });
+  const t1=document.getElementById('tab-run'), t2=document.getElementById('tab-dash');
+  if (t1) t1.classList.toggle('active', v==='run');
+  if (t2) t2.classList.toggle('active', v==='dash');
   if (v==='dash') refreshDash();
 }
 
