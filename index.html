@@ -379,47 +379,12 @@ table.mini th{font-size:10.5px}
         <div class="hero-sub" id="hero-sub">Select a sample invoice or drop a PDF below, then run the pipeline to see a reasoned decision here.</div>
       </div>
       <div class="hero-actions">
-        <button class="btn primary" id="hero-run-btn" onclick="startRun()">Run pipeline</button>
+        <button class="btn primary" id="hero-run-btn" onclick="heroRunClick()">Run pipeline</button>
         <button class="btn ghost" onclick="show('dash')">Dashboard</button>
       </div>
     </div>
 
-    <!-- two columns: source document | extracted + reasoning + matched PO -->
-    <div class="cols">
-      <div class="info-block">
-        <h3 class="sec-label">Source document</h3>
-        <div class="doc-frame">
-          <div class="doc-bar">
-            <span class="doc-fn" id="doc-fn">no document</span>
-            <div class="doc-tools">
-              <button class="vbtn" aria-label="zoom out" onclick="docZoom(-1)" title="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="7" x2="12" y2="17"/><line x1="7" y1="12" x2="17" y2="12"/></svg></button>
-              <button class="vbtn" aria-label="zoom in" onclick="docZoom(1)" title="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
-              <span class="doc-pageno"><span class="cur" id="doc-page-cur">1</span> of <span id="doc-page-total">1</span></span>
-            </div>
-          </div>
-          <div class="doc-canvas" id="doc-canvas">
-            <div class="doc-empty">NO DOCUMENT YET<br><br>Pick a sample or drop a PDF below to render the extracted fields here.</div>
-          </div>
-        </div>
-      </div>
-
-      <div class="info-stack">
-        <div class="info-block">
-          <h3 class="sec-label">Extracted JSON</h3>
-          <pre class="json" id="extracted-json"><span class="dim">{ } — fields appear here after a run</span></pre>
-        </div>
-        <div class="info-block">
-          <h3 class="sec-label">Reasoning log</h3>
-          <div class="reason" id="reason-log"><div class="reason-empty">No run yet — pick an invoice and run the pipeline.</div></div>
-        </div>
-        <div class="info-block">
-          <h3 class="sec-label">Matched PO</h3>
-          <div class="po-grid" id="matched-po"><div class="po-empty">No PO matched yet</div></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- input row: source + run -->
+    <!-- input row: source + run (moved to the top so you pick/drop first) -->
     <div class="card source-row">
       <h2>Source</h2>
       <label class="f" for="sample">Sample invoice</label>
@@ -451,6 +416,41 @@ table.mini th{font-size:10.5px}
 
       <button id="btn-run" onclick="startRun()">Run pipeline</button>
       <div class="meta" id="meta"></div>
+    </div>
+
+    <!-- two columns: source document | extracted + reasoning + matched PO -->
+    <div class="cols">
+      <div class="info-block">
+        <h3 class="sec-label">Source document</h3>
+        <div class="doc-frame">
+          <div class="doc-bar">
+            <span class="doc-fn" id="doc-fn">no document</span>
+            <div class="doc-tools">
+              <button class="vbtn" aria-label="zoom out" onclick="docZoom(-1)" title="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="7" x2="12" y2="17"/><line x1="7" y1="12" x2="17" y2="12"/></svg></button>
+              <button class="vbtn" aria-label="zoom in" onclick="docZoom(1)" title="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+              <span class="doc-pageno"><span class="cur" id="doc-page-cur">1</span> of <span id="doc-page-total">1</span></span>
+            </div>
+          </div>
+          <div class="doc-canvas" id="doc-canvas">
+            <div class="doc-empty">NO DOCUMENT YET<br><br>Pick a sample or drop a PDF above to render the extracted fields here.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-stack">
+        <div class="info-block">
+          <h3 class="sec-label">Extracted JSON</h3>
+          <pre class="json" id="extracted-json"><span class="dim">{ } — fields appear here after a run</span></pre>
+        </div>
+        <div class="info-block">
+          <h3 class="sec-label">Reasoning log</h3>
+          <div class="reason" id="reason-log"><div class="reason-empty">No run yet — pick an invoice and run the pipeline.</div></div>
+        </div>
+        <div class="info-block">
+          <h3 class="sec-label">Matched PO</h3>
+          <div class="po-grid" id="matched-po"><div class="po-empty">No PO matched yet</div></div>
+        </div>
+      </div>
     </div>
 
     <!-- hidden step rail kept for logic (visual state is now the hero) -->
@@ -503,6 +503,7 @@ let curMatchType = null;
 let curDuplicates = [];
 let curLabel = 'no document';
 let docScale = 1;
+let SAMPLES = [];            // the loaded sample list, so "Process another" can advance to a different one
 
 // ------------------------------------------------------------- theme
 function initTheme(){
@@ -537,6 +538,7 @@ function show(v){
 async function init(){
   initTheme();
   const s = await j('/api/samples');
+  SAMPLES = s;
   const sel = document.getElementById('sample');
   sel.innerHTML = s.map((o,i)=>`<option value="${o.path}">${o.file}${o.expect?` — expect ${o.expect}`:''}</option>`).join('');
   sel.onchange = ()=>{
@@ -817,6 +819,25 @@ async function startRun(){
     document.getElementById('btn-run').disabled = false;
     document.getElementById('hero-run-btn').disabled = false;
   }
+}
+
+// "Process another" — advance to a *different* invoice, then run it.
+// (Previously the hero button just re-ran the currently-selected file, so it
+//  kept processing the same PDF. Now it moves to the next sample and clears
+//  any uploaded file so the next run uses the newly-selected document.)
+function nextSampleIndex(currentPath){
+  if (!SAMPLES.length) return 0;
+  const i = SAMPLES.findIndex(o => o.path === currentPath);
+  if (i === -1 || i === SAMPLES.length - 1) return 0;   // not found, or last -> wrap to first
+  return i + 1;
+}
+function heroRunClick(){
+  if (!lastRunId) return startRun();   // nothing processed yet -> just run the current selection
+  const sel = document.getElementById('sample');
+  const usedSample = document.getElementById('file').files.length === 0 ? sel.value : null;
+  sel.selectedIndex = usedSample ? nextSampleIndex(usedSample) : 0;
+  clearFile();                          // drop any uploaded file, re-enable the select, refresh its description
+  startRun();                          // run the newly-selected sample
 }
 
 // feed live events into the decision-engine panels
