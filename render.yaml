@@ -11,8 +11,10 @@ services:
     # Render sets PORT automatically for Docker services; no healthcheck path
     # needed since the server binds 0.0.0.0:$PORT on startup.
     autoDeploy: true
-    disks:
-      - name: ap-data
+    # A single persistent disk, attached to this service. Render expects
+    # `disk` (singular) as an object, NOT a `disks` list.
+    disk:
+      name: ap-data
       # Mount the app's data dir onto the persistent disk so runs.db and
       # uploaded PDFs survive rebuilds and free-tier sleeps.
       mountPath: /app/data
