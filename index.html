@@ -131,6 +131,20 @@ select:disabled{opacity:.45;cursor:not-allowed}
 #btn-run:disabled{opacity:.5;cursor:wait}
 .meta{font:11px var(--mono);color:var(--muted);margin-top:10px;word-break:break-all;min-height:14px}
 
+/* uploaded-file details card (between the drop zone and the Run button) */
+.file-details{margin-top:12px;border:1px solid var(--line);border-radius:10px;
+  overflow:hidden;background:#fafbfc}
+.fd-head{display:flex;align-items:center;gap:10px;padding:11px 13px;
+  background:var(--accent-soft);border-bottom:1px solid var(--line)}
+.fd-head .ic{width:34px;height:34px;flex:none;border-radius:8px;background:var(--accent);color:#fff;
+  display:grid;place-items:center;font:800 11px/1 var(--mono);letter-spacing:.3px}
+.fd-head .fn{font-size:13px;font-weight:650;word-break:break-all}
+.fd-head .ft{font-size:11px;color:var(--muted);margin-top:1px}
+.fd-rows{padding:8px 13px}
+.fd-row{display:grid;grid-template-columns:96px 1fr;gap:8px;padding:3px 0;font:12px/1.5 var(--mono)}
+.fd-row .k{color:var(--muted)}
+.fd-row .v{color:var(--ink);word-break:break-all}
+
 /* ---------- dashboard ---------- */
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:16px}
 @media (max-width:720px){.kpis{grid-template-columns:repeat(2,1fr)}}
@@ -212,6 +226,24 @@ table.mini th{font-size:10.5px}
           <span id="drop-label">Drop a PDF here or click to browse</span>
           <div class="x" id="drop-x" onclick="clearFile(event)">remove</div>
         </label>
+
+        <!-- file details: appears below the drop zone once a file is chosen/dropped -->
+        <div id="file-details" class="file-details hidden" aria-live="polite">
+          <div class="fd-head">
+            <div class="ic">PDF</div>
+            <div>
+              <div class="fn" id="fd-name">—</div>
+              <div class="ft" id="fd-type">—</div>
+            </div>
+          </div>
+          <div class="fd-rows">
+            <div class="fd-row"><span class="k">File name</span><span class="v" id="fd-filename">—</span></div>
+            <div class="fd-row"><span class="k">Size</span><span class="v" id="fd-size">—</span></div>
+            <div class="fd-row"><span class="k">Type</span><span class="v" id="fd-mime">—</span></div>
+            <div class="fd-row"><span class="k">Modified</span><span class="v" id="fd-modified">—</span></div>
+          </div>
+        </div>
+
         <button id="btn-run" onclick="startRun()">Run pipeline</button>
         <div class="meta" id="meta"></div>
       </div>
@@ -307,6 +339,27 @@ function stepSet(i, state, glyph){
 }
 
 // ------------------------------------------------------------- source
+function fmtSize(bytes){
+  if (bytes == null) return '—';
+  const u = ['B','KB','MB','GB','TB'];
+  let i = 0;
+  while (bytes >= 1024 && i < u.length-1){ bytes /= 1024; i++; }
+  return bytes.toFixed(bytes < 10 && i > 0 ? 1 : 0) + ' ' + u[i];
+}
+function showFileDetails(f){
+  const box = document.getElementById('file-details');
+  document.getElementById('fd-name').textContent = f.name || '—';
+  document.getElementById('fd-type').textContent = f.type ? f.type : 'application/pdf';
+  document.getElementById('fd-filename').textContent = f.name || '—';
+  document.getElementById('fd-size').textContent = fmtSize(f.size);
+  document.getElementById('fd-mime').textContent = f.type || '—';
+  const last = f.lastModified ? new Date(f.lastModified).toLocaleString() : '—';
+  document.getElementById('fd-modified').textContent = last;
+  box.classList.remove('hidden');
+}
+function hideFileDetails(){
+  document.getElementById('file-details').classList.add('hidden');
+}
 function setFile(f){
   const fileEl = document.getElementById('file');
   // fileEl.files is a read-only FileList — build a DataTransfer to assign.
@@ -316,6 +369,7 @@ function setFile(f){
   const drop = document.getElementById('drop');
   drop.classList.add('set');
   document.getElementById('drop-label').textContent = f.name;
+  showFileDetails(f);
   document.getElementById('sample').disabled = true;
   document.getElementById('sample-desc').textContent = '';
 }
@@ -326,6 +380,7 @@ function clearFile(e){
   const drop = document.getElementById('drop');
   drop.classList.remove('set');
   document.getElementById('drop-label').textContent = 'Drop a PDF here or click to browse';
+  hideFileDetails();
   const sel = document.getElementById('sample');
   sel.disabled = false;
   sel.onchange();
