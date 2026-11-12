@@ -32,6 +32,7 @@
   --nav-bg:#141822; --nav-ink:#8b93a3; --nav-ink-hover:#dfe3ee;
   --chip-bg:#141822; --tgl:#242b3a;
   --doc:#0e1119; --doc-line:#1d222d; --doc-ink:#aeb6c6;
+  --hairline:rgba(255,255,255,.28);
   --mono:"JetBrains Mono",ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
   --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
 }
@@ -51,6 +52,7 @@
   --nav-bg:#1e2230; --nav-ink:#9aa1b5; --nav-ink-hover:#dfe3ee;
   --chip-bg:#1e2230; --tgl:#3a4150;
   --doc:#f3f4f8; --doc-line:#e2e5ec; --doc-ink:#5b6472;
+  --hairline:rgba(47,109,246,.25);
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -61,6 +63,12 @@ body::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;
   background:radial-gradient(55% 45% at 88% -8%,var(--accent-soft),transparent 72%),
             radial-gradient(45% 40% at -8% 14%,var(--accent-soft),transparent 72%);
   opacity:.5;transition:opacity .3s}
+body::after{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.5;
+  background-image:linear-gradient(var(--line-soft) 1px,transparent 1px),
+                   linear-gradient(90deg,var(--line-soft) 1px,transparent 1px);
+  background-size:44px 44px;
+  -webkit-mask-image:radial-gradient(120% 90% at 50% 0%,#000 0%,transparent 72%);
+          mask-image:radial-gradient(120% 90% at 50% 0%,#000 0%,transparent 72%)}
 main{position:relative;z-index:1}
 button{font-family:inherit}
 code{font-family:var(--mono);font-size:.92em}
@@ -117,8 +125,10 @@ nav button.active{background:linear-gradient(145deg,var(--accent-2),var(--accent
 }
 
 main{max-width:1180px;margin:0 auto;padding:26px 22px 40px}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;
-  box-shadow:0 1px 2px var(--shadow),0 10px 30px -12px var(--shadow-lg);padding:20px;transition:background .3s,border-color .3s}
+.card{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:18px;
+  box-shadow:0 1px 2px var(--shadow),0 18px 40px -18px var(--shadow-lg);padding:20px;transition:background .3s,border-color .3s}
+.card::before{content:"";position:absolute;inset:0 0 auto 0;height:1px;border-radius:18px 18px 0 0;
+  background:linear-gradient(90deg,transparent,var(--hairline),transparent);pointer-events:none}
 .card h2{font-size:12px;margin:0 0 14px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--muted)}
 .hidden{display:none!important}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
@@ -147,6 +157,8 @@ main .cols{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap
 .hero.HOLD .hero-badge{background:var(--hold-bg);color:var(--hold);border-color:var(--hold-line)}
 .hero.HOLD .hero-badge::before{background:var(--hold)}
 .hero-meta{font:11px var(--mono);color:var(--muted);letter-spacing:.2px}
+.hero.RUNNING .hero-badge{background:var(--accent-soft);color:var(--accent);border-color:var(--line);animation:blink 1.4s ease-in-out infinite}
+@keyframes blink{50%{opacity:.45}}
 .hero-title{font-size:31px;font-weight:800;letter-spacing:-.8px;line-height:1.05;color:var(--ink)}
 .hero-sub{margin-top:8px;font-size:13.5px;color:var(--ink-2);max-width:52ch}
 .hero-actions{display:flex;gap:9px;flex:none;flex-wrap:wrap;justify-content:flex-end}
@@ -214,35 +226,64 @@ main .cols{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap
 .po-row .v.open{color:var(--pay)}
 .po-empty{padding:20px;text-align:center;color:var(--muted);font:12px var(--mono);letter-spacing:.3px}
 
-/* source input row */
-.source-row{margin-top:2px}
+/* source input row — the main CTA card */
+.source-row{margin-top:0;position:relative;overflow:hidden}
+.source-row::before{content:"";position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(70% 55% at 100% 0%,var(--accent-soft),transparent 70%);opacity:.5}
+.source-row>*{position:relative}
 .src-card{position:static}
-label.f{display:block;font:600 11px var(--sans);letter-spacing:.3px;color:var(--muted);margin:0 0 8px}
-select{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:10px;font:500 13px var(--sans);
-  background:var(--panel-2);color:var(--ink);appearance:none;cursor:pointer;transition:border-color .15s,box-shadow .15s;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7383' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;background-position:right 13px center;padding-right:34px}
-select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,140,255,.18);outline:none}
-select:disabled{opacity:.45;cursor:not-allowed}
-.desc{font-size:11.5px;color:var(--muted);margin-top:7px;min-height:15px}
-.or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:11px;font-weight:600;margin:16px 0}
-.or::before,.or::after{content:"";height:1px;background:var(--line);flex:1}
-.drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;
-  border:1.5px dashed var(--line);border-radius:14px;padding:24px 14px;text-align:center;
-  color:var(--muted);font-size:12.5px;font-weight:500;cursor:pointer;transition:border-color .18s,background .18s}
-.drop svg{width:24px;height:24px;opacity:.7;transition:opacity .18s}
-.drop:hover,.drop.over{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
-.drop:hover svg,.drop.over svg{opacity:1}
+
+/* small sample chip inside the source card (replaces the big select) */
+.sample-chip{display:inline-flex;align-items:center;gap:8px;font:500 12px var(--sans);color:var(--ink-2);
+  background:var(--panel-2);border:1px solid var(--line);border-radius:99px;padding:7px 14px;
+  transition:border-color .15s}
+.sample-chip .dot{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.sample-chip b{color:var(--ink);font-weight:700}
+.desc{font-size:11.5px;color:var(--muted);margin-top:8px;min-height:15px;max-width:52ch}
+
+.drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;
+  border:1.5px dashed var(--line);border-radius:16px;padding:28px 16px 22px;text-align:center;
+  color:var(--muted);font-size:12.5px;font-weight:500;cursor:pointer;
+  background:var(--panel-2);transition:border-color .2s,background .2s,box-shadow .2s}
+.drop .ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;
+  background:var(--accent-soft);color:var(--accent);transition:transform .18s}
+.drop .ic svg{width:22px;height:22px}
+.drop:hover,.drop.over{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);
+  box-shadow:0 0 0 4px rgba(47,109,246,.1)}
+.drop:hover .ic,.drop.over .ic{background:var(--panel);transform:translateY(-2px)}
 .drop.set{border-style:solid;border-color:var(--accent);background:var(--accent-soft);color:var(--ink)}
 .drop .x{display:none;margin-top:2px;font-size:11px;color:var(--muted);text-decoration:underline}
 .drop.set .x{display:inline}
-#btn-run{width:100%;margin-top:16px;background:linear-gradient(145deg,var(--accent-2),var(--accent));color:#fff;border:0;padding:13px;
-  border-radius:11px;font:650 14px var(--sans);cursor:pointer;letter-spacing:.1px;
-  box-shadow:0 6px 18px -6px rgba(47,109,246,.6),inset 0 1px 0 rgba(255,255,255,.25);transition:transform .1s,filter .15s}
-#btn-run:hover:not(:disabled){filter:brightness(1.06)}
+#btn-run{width:100%;margin-top:18px;background:linear-gradient(145deg,var(--accent-2),var(--accent));color:#fff;border:0;
+  padding:14px;border-radius:12px;font:650 14.5px var(--sans);cursor:pointer;letter-spacing:.1px;
+  box-shadow:0 8px 24px -8px rgba(47,109,246,.65),inset 0 1px 0 rgba(255,255,255,.3);
+  transition:transform .1s,filter .15s,box-shadow .2s}
+#btn-run:hover:not(:disabled){filter:brightness(1.06);box-shadow:0 10px 30px -6px rgba(47,109,246,.75)}
 #btn-run:active:not(:disabled){transform:scale(.99)}
 #btn-run:disabled{opacity:.6;cursor:wait;filter:saturate(.6)}
 .meta{font:11px var(--mono);color:var(--muted);margin-top:10px;word-break:break-all;min-height:14px}
+
+/* floating sample picker (bottom-right corner) */
+.sample-fab{position:fixed;bottom:22px;right:22px;z-index:35;display:inline-flex;align-items:center;gap:8px;
+  border:0;cursor:pointer;background:linear-gradient(145deg,var(--accent-2),var(--accent));color:#fff;
+  font:600 13px var(--sans);padding:11px 18px;border-radius:99px;
+  box-shadow:0 12px 30px -8px rgba(47,109,246,.6),inset 0 1px 0 rgba(255,255,255,.3);
+  transition:transform .15s,box-shadow .2s}
+.sample-fab svg{width:16px;height:16px}
+.sample-fab:hover{transform:translateY(-2px);box-shadow:0 16px 36px -8px rgba(47,109,246,.75)}
+.sample-pop{position:fixed;bottom:78px;right:22px;z-index:35;width:280px;background:var(--panel);
+  border:1px solid var(--line);border-radius:16px;box-shadow:0 20px 50px -12px rgba(0,0,0,.6);
+  padding:8px;animation:pop .18s ease}
+@keyframes pop{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+.sample-pop .pop-h{font:700 11px var(--mono);letter-spacing:.6px;text-transform:uppercase;color:var(--muted);
+  padding:8px 10px 6px}
+.sample-pop .pop-item{display:flex;flex-direction:column;gap:1px;padding:9px 10px;border-radius:10px;cursor:pointer;
+  transition:background .12s}
+.sample-pop .pop-item:hover{background:var(--panel-2)}
+.sample-pop .pop-item.active{background:var(--accent-soft)}
+.sample-pop .pop-item .f{font:600 13px var(--sans);color:var(--ink)}
+.sample-pop .pop-item.active .f{color:var(--accent)}
+.sample-pop .pop-item .d{font:11px var(--sans);color:var(--muted);line-height:1.3}
 
 /* uploaded-file details card */
 .file-details{margin-top:12px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel-2);animation:rise .25s ease}
@@ -298,7 +339,8 @@ select:disabled{opacity:.45;cursor:not-allowed}
 @media (max-width:720px){.kpis{grid-template-columns:repeat(2,1fr)}}
 .kpi{position:relative;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:14px;
   padding:16px 18px;box-shadow:0 1px 2px var(--shadow),0 8px 24px -14px var(--shadow-lg);transition:transform .15s,background .3s,border-color .3s}
-.kpi:hover{transform:translateY(-2px)}
+.kpi::after{content:"";position:absolute;inset:0 0 auto 0;height:1px;background:linear-gradient(90deg,transparent,var(--hairline),transparent);pointer-events:none}
+.kpi:hover{transform:translateY(-3px);box-shadow:0 1px 2px var(--shadow),0 14px 30px -14px var(--shadow-lg)}
 .kpi::before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--accent);opacity:.5}
 .kpi.k-pay::before{background:var(--pay)}.kpi.k-rev::before{background:var(--review)}.kpi.k-oth::before{background:var(--reject)}
 .kpi .n{font-size:30px;font-weight:800;letter-spacing:-.8px;font-variant-numeric:tabular-nums;line-height:1}
@@ -386,16 +428,18 @@ table.mini th{font-size:10.5px}
 
     <!-- input row: source + run (moved to the top so you pick/drop first) -->
     <div class="card source-row">
-      <h2>Source</h2>
-      <label class="f" for="sample">Sample invoice</label>
-      <select id="sample"></select>
-      <div class="desc" id="sample-desc"></div>
-      <div class="or"><span>or</span></div>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+        <h2>Source</h2>
+        <div class="sample-chip" id="sample-chip" title="Active sample invoice — open the picker to switch">
+          <span class="dot"></span>Sample&nbsp;·&nbsp;<b id="sample-chip-label">—</b>
+        </div>
+      </div>
+      <div class="desc" id="sample-desc">Pick one from the <b style="color:var(--accent)">Samples</b> button in the bottom-right, or drop your own PDF.</div>
       <label class="drop" id="drop" for="file">
-        <input type="file" id="file" accept="application/pdf" hidden>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/></svg>
-        <span id="drop-label">Drop a PDF here or click to browse</span>
-        <div class="x" id="drop-x" onclick="clearFile(event)">remove</div>
+        <input type="file" id="file" accept="application/pdf" hidden onchange="onFilePicked()">
+        <span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/></svg></span>
+        <span id="drop-label">Drop a PDF here, or click to browse</span>
+        <div class="x" id="drop-x" onclick="clearFile(event)">remove file</div>
       </label>
 
       <div id="file-details" class="file-details hidden" aria-live="polite">
@@ -455,6 +499,17 @@ table.mini th{font-size:10.5px}
 
     <!-- hidden step rail kept for logic (visual state is now the hero) -->
     <div class="steps hidden" id="steps" aria-hidden="true"></div>
+
+    <!-- floating sample picker (corner control that replaces the old select) -->
+    <div class="sample-pop hidden" id="sample-pop">
+      <div class="pop-h">Sample invoices</div>
+      <div id="sample-pop-list"></div>
+    </div>
+    <button class="sample-fab" id="sample-fab" onclick="toggleSamples()" aria-haspopup="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="8" y1="4" x2="8" y2="9"/></svg>
+      Samples
+      <span id="sample-fab-count"></span>
+    </button>
   </section>
 
   <!-- ============ DASHBOARD ============ -->
@@ -504,6 +559,7 @@ let curDuplicates = [];
 let curLabel = 'no document';
 let docScale = 1;
 let SAMPLES = [];            // the loaded sample list, so "Process another" can advance to a different one
+let sampleIdx = 0;          // which sample is active when no uploaded file is selected
 
 // ------------------------------------------------------------- theme
 function initTheme(){
@@ -539,13 +595,7 @@ async function init(){
   initTheme();
   const s = await j('/api/samples');
   SAMPLES = s;
-  const sel = document.getElementById('sample');
-  sel.innerHTML = s.map((o,i)=>`<option value="${o.path}">${o.file}${o.expect?` — expect ${o.expect}`:''}</option>`).join('');
-  sel.onchange = ()=>{
-    const o = s.find(x=>x.path===sel.value);
-    document.getElementById('sample-desc').textContent = o ? o.description : '';
-  };
-  sel.onchange();
+  buildSamplePicker();
   const drop = document.getElementById('drop');
   drop.addEventListener('dragover', e=>{e.preventDefault(); drop.classList.add('over');});
   drop.addEventListener('dragleave', ()=>drop.classList.remove('over'));
@@ -559,6 +609,14 @@ async function init(){
   chip.classList.add(l.configured ? 'ok' : 'on');
   buildSteps();
   refreshDash();
+  // close the sample popover when clicking anywhere outside it
+  document.addEventListener('click', e=>{
+    const pop = document.getElementById('sample-pop');
+    const fab = document.getElementById('sample-fab');
+    if (!pop || pop.classList.contains('hidden')) return;
+    if (pop.contains(e.target) || (fab && fab.contains(e.target))) return;
+    pop.classList.add('hidden');
+  });
 }
 
 // keep a (hidden) step rail so legacy logic + progress still works, then build the visible panels
@@ -744,9 +802,14 @@ function setFile(f){
   const drop = document.getElementById('drop');
   drop.classList.add('set');
   document.getElementById('drop-label').textContent = f.name;
-  showFileDetails(f);
-  document.getElementById('sample').disabled = true;
-  document.getElementById('sample-desc').textContent = '';
+  showFileDetails(f);           // show the file-metadata card (also called on click-to-browse)
+}
+// click-to-browse used to do nothing with the picked file, so the metadata
+// card only appeared when you dragged a file. Now the input's change handler
+// feeds the chosen file into the same setFile path.
+function onFilePicked(){
+  const f = document.getElementById('file').files[0];
+  if (f) setFile(f);
 }
 function clearFile(e){
   if (e) e.preventDefault();
@@ -754,11 +817,63 @@ function clearFile(e){
   fileEl.value = '';
   const drop = document.getElementById('drop');
   drop.classList.remove('set');
-  document.getElementById('drop-label').textContent = 'Drop a PDF here or click to browse';
+  document.getElementById('drop-label').textContent = 'Drop a PDF here, or click to browse';
   hideFileDetails();
-  const sel = document.getElementById('sample');
-  sel.disabled = false;
-  sel.onchange();
+  refreshSampleChip();          // re-assert the active sample description
+}
+
+// ------------------------------------------------------------- sample picker (corner control)
+function buildSamplePicker(){
+  const list = document.getElementById('sample-pop-list');
+  list.innerHTML = SAMPLES.map((o,i)=>
+    `<div class="pop-item" data-i="${i}" onclick="selectSample(${i});closeSamples(event)">
+       <span class="f">${o.file}${o.expect?` <span style="color:var(--muted);font-weight:500">· ${o.expect}</span>`:''}</span>
+       ${o.description?`<span class="d">${o.description}</span>`:''}
+     </div>`).join('');
+  const c = document.getElementById('sample-fab-count');
+  if (c) c.textContent = SAMPLES.length ? SAMPLES.length : '';
+  refreshSampleChip();
+}
+function refreshSampleChip(){
+  const hasUpload = document.getElementById('file').files.length > 0;
+  const label = document.getElementById('sample-chip-label');
+  const desc = document.getElementById('sample-desc');
+  if (hasUpload){
+    label.textContent = 'custom file';
+    if (desc) desc.innerHTML = 'You\'re running a <b>custom uploaded file</b> — pick a sample from the <b style="color:var(--accent)">Samples</b> button, or drop another PDF, to switch back.';
+    return;
+  }
+  const o = SAMPLES[sampleIdx];
+  if (o){
+    label.textContent = o.file;
+    if (desc) desc.innerHTML = (o.description?`${o.description}`:'Sample invoice')+`${o.expect?` <b style="color:var(--muted)">— expect ${o.expect}</b>`:''}`;
+  }
+}
+function selectSample(i){
+  sampleIdx = i;
+  // clear any uploaded file so the sample actually runs
+  document.getElementById('file').value = '';
+  const drop = document.getElementById('drop');
+  drop.classList.remove('set');
+  document.getElementById('drop-label').textContent = 'Drop a PDF here, or click to browse';
+  hideFileDetails();
+  refreshSampleChip();
+  // highlight the active row in the popover
+  document.querySelectorAll('#sample-pop-list .pop-item').forEach(el=>
+    el.classList.toggle('active', +el.dataset.i===i));
+}
+function toggleSamples(){
+  const pop = document.getElementById('sample-pop');
+  const open = pop.classList.contains('hidden');
+  if (open){
+    document.querySelectorAll('#sample-pop-list .pop-item').forEach(el=>
+      el.classList.toggle('active', +el.dataset.i===sampleIdx));
+    pop.classList.remove('hidden');
+  } else pop.classList.add('hidden');
+}
+function closeSamples(e){
+  if (e) e.stopPropagation();
+  document.getElementById('sample-pop').classList.add('hidden');
 }
 
 // ------------------------------------------------------------- run
@@ -773,8 +888,8 @@ async function startRun(){
     const up = await j('/api/upload',{method:'POST', body:fd});
     target = up.path; label = f.name;
   } else {
-    target = document.getElementById('sample').value;
-    label = target.split('/').pop();
+    target = SAMPLES[sampleIdx].path;
+    label = SAMPLES[sampleIdx].file;
   }
   // reset the decision-engine panels for a fresh run
   curEx=null; curPo=null; curPoCandidates=null; curMatchType=null; curDuplicates=[]; docScale=1;
@@ -833,10 +948,9 @@ function nextSampleIndex(currentPath){
 }
 function heroRunClick(){
   if (!lastRunId) return startRun();   // nothing processed yet -> just run the current selection
-  const sel = document.getElementById('sample');
-  const usedSample = document.getElementById('file').files.length === 0 ? sel.value : null;
-  sel.selectedIndex = usedSample ? nextSampleIndex(usedSample) : 0;
-  clearFile();                          // drop any uploaded file, re-enable the select, refresh its description
+  const hadUpload = document.getElementById('file').files.length > 0;
+  sampleIdx = hadUpload ? 0 : nextSampleIndex(SAMPLES[sampleIdx].path);
+  selectSample(sampleIdx);             // clear any uploaded file + set the active sample + refresh the chip
   startRun();                          // run the newly-selected sample
 }
 
@@ -877,7 +991,7 @@ function finishRun(d){
 
 function setHeroRunning(label){
   const hero = document.getElementById('hero');
-  hero.className = 'hero';
+  hero.className = 'hero RUNNING';
   document.getElementById('hero-badge').textContent = 'RUNNING';
   document.getElementById('hero-meta').textContent = label;
   document.getElementById('hero-title').textContent = 'Processing…';
