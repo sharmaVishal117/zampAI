@@ -309,7 +309,10 @@ function stepSet(i, state, glyph){
 // ------------------------------------------------------------- source
 function setFile(f){
   const fileEl = document.getElementById('file');
-  fileEl.files = [f];
+  // fileEl.files is a read-only FileList — build a DataTransfer to assign.
+  const dt = new DataTransfer();
+  dt.items.add(f);
+  fileEl.files = dt.files;
   const drop = document.getElementById('drop');
   drop.classList.add('set');
   document.getElementById('drop-label').textContent = f.name;

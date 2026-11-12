@@ -234,17 +234,31 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def _parse_multipart(raw: bytes, content_type: str) -> tuple[str, bytes]:
-    m = re.search(r'name="([^"]+)"', content_type)
-    boundary = m.group(1).encode() if m else b"----"
-    parts = raw.split(b"--" + boundary)
-    for part in parts:
+    """Extract (filename, bytes) of the first file part from a multipart body.
+
+    The boundary is declared in the Content-Type header as `boundary=<value>`
+    (unquoted, or sometimes quoted). Browsers prefix it with dashes, so the
+    wire delimiters are `--<value>`. The old code wrongly searched for
+    `name="..."` (there is no such field in the header) and fell back to the
+    literal `----`, so the split never aligned with the real boundary and no
+    file part was ever found.
+    """
+    m = re.search(r'boundary=("?)([^";]+)\1', content_type, re.IGNORECASE)
+    if not m:
+        return "", b""
+    delimiter = b"--" + m.group(2).encode()
+    for part in raw.split(delimiter):
         if b"filename=" not in part:
             continue
-        head, _, body = part.partition(b"\r\n\r\n")
-        fm = re.search(rb'filename="([^"]+)"', head)
+        head, sep, body = part.partition(b"\r\n\r\n")
+        if not sep:
+            continue
+        fm = re.search(rb'filename="([^"]*)"', head)
         if not fm:
             continue
-        body = body.rstrip(b"\r\n-")
+        # Remove the CRLF that precedes the closing delimiter (if present).
+        if body.endswith(b"\r\n"):
+            body = body[:-2]
         return fm.group(1).decode(errors="replace"), body
     return "", b""
 
