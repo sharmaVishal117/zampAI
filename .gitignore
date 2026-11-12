@@ -1,0 +1,6 @@
+# .gitignore for the PS-1 project
+__pycache__/
+*.pyc
+data/runs.db
+data/uploads/*
+.DS_Store
