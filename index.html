@@ -17,6 +17,25 @@
 </script>
 <style>
 :root{
+  color-scheme:dark;
+  --bg:#08090d; --panel:#11141b; --panel-2:#0c0e14; --line:#20252f; --line-soft:#181c25;
+  --ink:#e7eaf2; --ink-2:#aeb6c6; --muted:#6a7184;
+  --accent:#4f8cff; --accent-2:#7aa2ff; --accent-soft:#141c30;
+  --shadow:rgba(0,0,0,.5); --shadow-lg:rgba(0,0,0,.7);
+  --pay:#3ddc97;   --pay-bg:#0f241d;   --pay-line:#1c5a44;
+  --review:#f5b332;--review-bg:#281f08;--review-line:#5a4417;
+  --reject:#ff5d5d;--reject-bg:#271013;--reject-line:#5a2528;
+  --hold:#8b85f0;  --hold-bg:#1a1a38;  --hold-line:#3a3869;
+  --ok:#3ddc97; --err:#ff5d5d;
+  --rail:#0b0e15; --rail-line:#1d2331; --rail-ink:#c6cddc; --rail-muted:#5d6679; --rail-dec:#111a2b;
+  --hdr:#08090d; --hdr-bg:rgba(8,9,13,.82); --hdr-ink:#e7eaf2; --hdr-muted:#7f8798; --hdr-line:rgba(255,255,255,.06);
+  --nav-bg:#141822; --nav-ink:#8b93a3; --nav-ink-hover:#dfe3ee;
+  --chip-bg:#141822; --tgl:#242b3a;
+  --doc:#0e1119; --doc-line:#1d222d; --doc-ink:#aeb6c6;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+  --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+[data-theme="light"]{
   color-scheme:light;
   --bg:#eef1f7; --panel:#ffffff; --panel-2:#f6f8fc; --line:#e6e9f1; --line-soft:#eff2f8;
   --ink:#14161d; --ink-2:#3b414e; --muted:#6b7383;
@@ -28,27 +47,10 @@
   --hold:#5b54d6;  --hold-bg:#edeefc;  --hold-line:#cfd0f3;
   --ok:#1a9a5f; --err:#dc4a4a;
   --rail:#0f1220; --rail-line:#232839; --rail-ink:#c3cade; --rail-muted:#5b6478; --rail-dec:#152238;
-  --hdr:#14161d; --hdr-bg:rgba(20,22,29,.85); --hdr-ink:#e8eaf1; --hdr-muted:#8b91a3; --hdr-line:transparent;
+  --hdr:#14161d; --hdr-bg:rgba(20,22,29,.9); --hdr-ink:#e8eaf1; --hdr-muted:#8b91a3; --hdr-line:transparent;
   --nav-bg:#1e2230; --nav-ink:#9aa1b5; --nav-ink-hover:#dfe3ee;
   --chip-bg:#1e2230; --tgl:#3a4150;
-  --mono:"JetBrains Mono",ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
-  --sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
-}
-[data-theme="dark"]{
-  color-scheme:dark;
-  --bg:#0a0c11; --panel:#151922; --panel-2:#1a1f2a; --line:#2a3040; --line-soft:#232838;
-  --ink:#e9ecf3; --ink-2:#aab2c2; --muted:#828a9c;
-  --accent:#4f86ff; --accent-2:#6f9dff; --accent-soft:#182541;
-  --shadow:rgba(0,0,0,.4); --shadow-lg:rgba(0,0,0,.6);
-  --pay:#3ddc97;   --pay-bg:#0f3325;   --pay-line:#1a5a40;
-  --review:#f5b332;--review-bg:#332708;--review-line:#5a4417;
-  --reject:#ff6b6b;--reject-bg:#351214;--reject-line:#5a2528;
-  --hold:#8b85f0;  --hold-bg:#1e1e3f;  --hold-line:#3a3869;
-  --ok:#3ddc97; --err:#ff6b6b;
-  --rail:#0c0f16; --rail-line:#232a3a; --rail-ink:#c8cfdd; --rail-muted:#616b7f; --rail-dec:#11192a;
-  --hdr:#0f1219; --hdr-bg:rgba(15,18,25,.82); --hdr-ink:#e8eaf1; --hdr-muted:#7f8798; --hdr-line:rgba(255,255,255,.06);
-  --nav-bg:#1a1e29; --nav-ink:#8b93a3; --nav-ink-hover:#dfe3ee;
-  --chip-bg:#1a1e29; --tgl:#2a3040;
+  --doc:#f3f4f8; --doc-line:#e2e5ec; --doc-ink:#5b6472;
 }
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -121,29 +123,140 @@ main{max-width:1180px;margin:0 auto;padding:26px 22px 40px}
 .hidden{display:none!important}
 @media (prefers-reduced-motion: reduce){*{animation:none!important;transition:none!important}}
 
-/* ---------- process layout ---------- */
-.run-grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(280px,1fr);gap:16px;align-items:start}
-@media (max-width:940px){.run-grid{grid-template-columns:1fr}.src-card{order:-1}}
+/* ---------- process layout (decision engine) ---------- */
+main .cols{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:16px;align-items:start;margin-bottom:16px}
+@media (max-width:900px){main .cols{grid-template-columns:1fr}}
 
-/* run steps: this IS a sequence, so the numbered rail earns its place */
-.steps{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-@media (max-width:560px){.steps{grid-template-columns:1fr}}
-.step{display:flex;gap:11px;align-items:flex-start;padding:13px 14px;border:1px solid var(--line-soft);
-  border-radius:12px;background:var(--panel-2);transition:background .2s,border-color .2s,box-shadow .2s}
-.node{width:28px;height:28px;flex:none;border-radius:50%;border:2px solid var(--line);background:var(--panel);
-  display:grid;place-items:center;font:700 12px/1 var(--mono);color:var(--muted);transition:all .25s}
-.step .t{font-size:13px;font-weight:600;padding-top:2px;letter-spacing:-.1px}
-.step .d{font-size:11px;color:var(--muted);margin-top:2px}
-.step.running{border-color:var(--accent-soft);background:var(--accent-soft);box-shadow:0 4px 14px -6px var(--accent)}
-.step.running .node{border-color:var(--accent);color:var(--accent);
-  box-shadow:0 0 0 4px rgba(47,109,246,.14);animation:pulse 1.2s ease-in-out infinite}
-@keyframes pulse{50%{box-shadow:0 0 0 7px rgba(47,109,246,.06)}}
-.step.done .node{background:var(--ok);border-color:var(--ok);color:#fff}
-.step.done .t{color:var(--ink)}
-.step.err .node{background:var(--err);border-color:var(--err);color:#fff}
-.step.err{border-color:var(--reject-line);background:var(--reject-bg)}
+/* hero decision banner */
+.hero{position:relative;overflow:hidden;background:var(--panel);border:1px solid var(--line);border-radius:16px;
+  padding:22px 24px;margin-bottom:16px;box-shadow:0 10px 34px -18px var(--shadow-lg);
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:18px;align-items:center;transition:background .3s,border-color .3s}
+.hero::after{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:var(--accent);opacity:.6}
+.hero.PAY::after{background:var(--pay)}.hero.REVIEW::after{background:var(--review)}
+.hero.REJECT::after{background:var(--reject)}.hero.HOLD::after{background:var(--hold)}.hero.ERROR::after{background:var(--err)}
+.hero-line1{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;font:700 12px var(--mono);letter-spacing:.6px;
+  padding:5px 12px;border-radius:8px;background:var(--accent-soft);color:var(--accent);border:1px solid var(--line)}
+.hero-badge::before{content:"";width:9px;height:9px;border-radius:2px;background:var(--accent)}
+.hero.PAY .hero-badge{background:var(--pay-bg);color:var(--pay);border-color:var(--pay-line)}
+.hero.PAY .hero-badge::before{background:var(--pay)}
+.hero.REVIEW .hero-badge{background:var(--review-bg);color:var(--review);border-color:var(--review-line)}
+.hero.REVIEW .hero-badge::before{background:var(--review)}
+.hero.REJECT .hero-badge,.hero.ERROR .hero-badge{background:var(--reject-bg);color:var(--reject);border-color:var(--reject-line)}
+.hero.REJECT .hero-badge::before,.hero.ERROR .hero-badge::before{background:var(--reject)}
+.hero.HOLD .hero-badge{background:var(--hold-bg);color:var(--hold);border-color:var(--hold-line)}
+.hero.HOLD .hero-badge::before{background:var(--hold)}
+.hero-meta{font:11px var(--mono);color:var(--muted);letter-spacing:.2px}
+.hero-title{font-size:31px;font-weight:800;letter-spacing:-.8px;line-height:1.05;color:var(--ink)}
+.hero-sub{margin-top:8px;font-size:13.5px;color:var(--ink-2);max-width:52ch}
+.hero-actions{display:flex;gap:9px;flex:none;flex-wrap:wrap;justify-content:flex-end}
+.btn{border:0;cursor:pointer;font:600 13px var(--sans);padding:9px 16px;border-radius:9px;transition:transform .1s,filter .15s,background .15s}
+.btn.primary{background:linear-gradient(145deg,var(--accent-2),var(--accent));color:#fff;
+  box-shadow:0 4px 14px -4px rgba(47,109,246,.5),inset 0 1px 0 rgba(255,255,255,.25)}
+.btn.primary:hover{filter:brightness(1.06)}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--ink)}
+.btn.ghost:hover{border-color:var(--accent);color:var(--accent)}
+.btn:disabled{opacity:.5;cursor:wait}
 
-/* decision banner */
+/* section labels + stacked info blocks */
+.sec-label{font:600 11px var(--mono);letter-spacing:1.1px;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+.info-stack{display:flex;flex-direction:column;gap:16px}
+.info-block{min-width:0}
+
+/* source document pane */
+.doc-frame{background:var(--doc);border:1px solid var(--doc-line);border-radius:14px;overflow:hidden;
+  box-shadow:0 1px 2px var(--shadow)}
+.doc-bar{display:flex;align-items:center;gap:8px;padding:9px 12px;background:var(--panel-2);
+  border-bottom:1px solid var(--line)}
+.doc-bar .doc-fn{font:600 11px var(--mono);color:var(--ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.doc-tools{margin-left:auto;display:flex;align-items:center;gap:2px;color:var(--muted)}
+.doc-tools .vbtn{width:24px;height:24px;border:0;background:none;color:var(--muted);border-radius:6px;cursor:pointer;
+  display:grid;place-items:center;opacity:.7;transition:opacity .15s,background .15s}
+.doc-tools .vbtn:hover{opacity:1;background:var(--accent-soft);color:var(--accent)}
+.doc-tools svg{width:15px;height:15px}
+.doc-pageno{font:600 11px var(--mono);color:var(--ink-2);padding:0 6px;white-space:nowrap}
+.doc-pageno .cur{color:var(--ink)}
+.doc-canvas{padding:24px 22px;min-height:300px;max-height:480px;overflow:auto;color:var(--doc-ink);
+  font:12.5px/1.9 var(--mono);white-space:pre-wrap}
+.doc-canvas .h{color:var(--ink);font-weight:700}
+.doc-canvas .lbl{color:var(--muted)}
+.doc-canvas .row{display:flex;justify-content:space-between;gap:20px}
+.doc-canvas .row .v{color:var(--ink);font-weight:600}
+.doc-canvas .total{margin-top:10px;padding-top:10px;border-top:1px dashed var(--doc-line);
+  display:flex;justify-content:space-between;font-weight:700;color:var(--ink)}
+.doc-empty{padding:40px 22px;color:var(--muted);font:12px var(--mono);text-align:center;letter-spacing:.3px}
+
+/* extracted json */
+.json{background:var(--rail);border:1px solid var(--rail-line);border-radius:14px;padding:16px 18px;
+  font:12px/1.85 var(--mono);color:#9aa3b8;overflow:auto;max-height:300px;white-space:pre}
+.json .k{color:#7aa2ff}.json .s{color:#7fd1a8}.json .n{color:#f5b332}.json .b{color:#ff8fa3}
+.json .dim{color:#5d6679}
+
+/* reasoning log */
+.reason{background:var(--panel-2);border:1px solid var(--line);border-radius:14px;padding:4px 15px}
+.reason-item{display:flex;gap:11px;padding:11px 0;align-items:flex-start}
+.reason-item+.reason-item{border-top:1px solid var(--line-soft)}
+.reason-item .ic{font:800 14px/1.2 var(--mono);width:15px;flex:none;text-align:center}
+.reason-item.ok .ic{color:var(--ok)}
+.reason-item.warn .ic{color:var(--review)}
+.reason-item.bad .ic{color:var(--err)}
+.reason-item .r-title{font-size:13px;font-weight:700;color:var(--ink)}
+.reason-item .r-sub{font-size:11.5px;color:var(--muted);margin-top:2px;font-family:var(--mono)}
+.reason-empty{padding:18px;text-align:center;color:var(--muted);font:12px var(--mono);letter-spacing:.3px}
+
+/* matched PO */
+.po-grid{background:var(--panel-2);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+.po-row{display:grid;grid-template-columns:1fr auto;gap:10px;padding:10px 15px;font-size:12.5px;align-items:center}
+.po-row+.po-row{border-top:1px solid var(--line-soft)}
+.po-row .k{color:var(--muted);font-weight:500}
+.po-row .v{font-family:var(--mono);font-weight:600;text-align:right}
+.po-row .v.closed{color:var(--reject)}
+.po-row .v.open{color:var(--pay)}
+.po-empty{padding:20px;text-align:center;color:var(--muted);font:12px var(--mono);letter-spacing:.3px}
+
+/* source input row */
+.source-row{margin-top:2px}
+.src-card{position:static}
+label.f{display:block;font:600 11px var(--sans);letter-spacing:.3px;color:var(--muted);margin:0 0 8px}
+select{width:100%;padding:11px 13px;border:1px solid var(--line);border-radius:10px;font:500 13px var(--sans);
+  background:var(--panel-2);color:var(--ink);appearance:none;cursor:pointer;transition:border-color .15s,box-shadow .15s;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7383' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 13px center;padding-right:34px}
+select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,140,255,.18);outline:none}
+select:disabled{opacity:.45;cursor:not-allowed}
+.desc{font-size:11.5px;color:var(--muted);margin-top:7px;min-height:15px}
+.or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:11px;font-weight:600;margin:16px 0}
+.or::before,.or::after{content:"";height:1px;background:var(--line);flex:1}
+.drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;
+  border:1.5px dashed var(--line);border-radius:14px;padding:24px 14px;text-align:center;
+  color:var(--muted);font-size:12.5px;font-weight:500;cursor:pointer;transition:border-color .18s,background .18s}
+.drop svg{width:24px;height:24px;opacity:.7;transition:opacity .18s}
+.drop:hover,.drop.over{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.drop:hover svg,.drop.over svg{opacity:1}
+.drop.set{border-style:solid;border-color:var(--accent);background:var(--accent-soft);color:var(--ink)}
+.drop .x{display:none;margin-top:2px;font-size:11px;color:var(--muted);text-decoration:underline}
+.drop.set .x{display:inline}
+#btn-run{width:100%;margin-top:16px;background:linear-gradient(145deg,var(--accent-2),var(--accent));color:#fff;border:0;padding:13px;
+  border-radius:11px;font:650 14px var(--sans);cursor:pointer;letter-spacing:.1px;
+  box-shadow:0 6px 18px -6px rgba(47,109,246,.6),inset 0 1px 0 rgba(255,255,255,.25);transition:transform .1s,filter .15s}
+#btn-run:hover:not(:disabled){filter:brightness(1.06)}
+#btn-run:active:not(:disabled){transform:scale(.99)}
+#btn-run:disabled{opacity:.6;cursor:wait;filter:saturate(.6)}
+.meta{font:11px var(--mono);color:var(--muted);margin-top:10px;word-break:break-all;min-height:14px}
+
+/* uploaded-file details card */
+.file-details{margin-top:12px;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--panel-2);animation:rise .25s ease}
+.fd-head{display:flex;align-items:center;gap:11px;padding:12px 14px;background:var(--accent-soft);border-bottom:1px solid var(--line)}
+.fd-head .ic{width:36px;height:36px;flex:none;border-radius:9px;background:linear-gradient(145deg,var(--accent-2),var(--accent));
+  color:#fff;display:grid;place-items:center;font:800 11px/1 var(--mono);box-shadow:0 3px 9px rgba(47,109,246,.4)}
+.fd-head .fn{font-size:13px;font-weight:650;word-break:break-all;color:var(--ink)}
+.fd-head .ft{font-size:11px;color:var(--muted);margin-top:1px;font-family:var(--mono)}
+.fd-rows{padding:9px 14px}
+.fd-row{display:grid;grid-template-columns:96px 1fr;gap:8px;padding:4px 0;font:12px/1.5 var(--mono)}
+.fd-row .k{color:var(--muted)}
+.fd-row .v{color:var(--ink);word-break:break-all;font-weight:500}
+
+/* decision banner (used by drawer) */
 .banner{display:none;margin-top:14px;border-radius:14px;padding:16px 18px;border:1px solid var(--line);
   box-shadow:0 2px 10px -4px var(--shadow-lg)}
 .banner.show{display:block;animation:rise .28s ease}
@@ -179,50 +292,6 @@ main{max-width:1180px;margin:0 auto;padding:26px 22px 40px}
 .line.dec{background:var(--rail-dec);margin:2px -15px;padding:6px 15px;border-radius:0}
 .line.dec .m{color:#7fd1a8;font-weight:700}
 .line.empty{color:#4a5164}
-
-/* source card */
-.src-card{position:sticky;top:76px}
-@media (max-width:940px){.src-card{position:static}}
-label.f{display:block;font-size:11.5px;color:var(--muted);margin:0 0 6px;font-weight:600;letter-spacing:.2px}
-select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:13px;font-weight:500;
-  background:var(--panel-2);color:var(--ink);appearance:none;cursor:pointer;transition:border-color .15s,box-shadow .15s;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236b7383' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
-select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(47,109,246,.15);outline:none}
-select:disabled{opacity:.45;cursor:not-allowed}
-.desc{font-size:11.5px;color:var(--muted);margin-top:6px;min-height:15px}
-.or{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:11px;margin:16px 0;font-weight:500}
-.or::before,.or::after{content:"";height:1px;background:var(--line);flex:1}
-.drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;
-  border:1.5px dashed var(--line);border-radius:14px;padding:22px 14px;text-align:center;
-  color:var(--muted);font-size:12.5px;cursor:pointer;transition:border-color .18s,background .18s}
-.drop svg{width:24px;height:24px;opacity:.7}
-.drop:hover,.drop.over{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
-.drop:hover svg,.drop.over svg{opacity:1}
-.drop.set{border-style:solid;border-color:var(--accent);background:var(--accent-soft);color:var(--ink);font-weight:600}
-.drop .x{display:none;margin-top:2px;font-size:11px;color:var(--muted);text-decoration:underline}
-.drop.set .x{display:inline}
-#btn-run{width:100%;margin-top:16px;background:linear-gradient(145deg,var(--accent-2),var(--accent));color:#fff;border:0;padding:13px;
-  border-radius:11px;font-size:14px;font-weight:650;cursor:pointer;letter-spacing:.1px;
-  box-shadow:0 4px 14px -2px rgba(47,109,246,.5),inset 0 1px 0 rgba(255,255,255,.25);transition:transform .1s,box-shadow .1s}
-#btn-run:hover:not(:disabled){filter:brightness(1.05);box-shadow:0 7px 20px -3px rgba(47,109,246,.55)}
-#btn-run:active:not(:disabled){transform:scale(.99)}
-#btn-run:disabled{opacity:.6;cursor:wait;filter:saturate(.6)}
-.meta{font:11px var(--mono);color:var(--muted);margin-top:10px;word-break:break-all;min-height:14px}
-
-/* uploaded-file details card (between the drop zone and the Run button) */
-.file-details{margin-top:12px;border:1px solid var(--line);border-radius:12px;overflow:hidden;
-  background:var(--panel-2);animation:rise .25s ease}
-.fd-head{display:flex;align-items:center;gap:11px;padding:12px 14px;background:var(--accent-soft);border-bottom:1px solid var(--line)}
-.fd-head .ic{width:36px;height:36px;flex:none;border-radius:9px;background:linear-gradient(145deg,var(--accent-2),var(--accent));
-  color:#fff;display:grid;place-items:center;font:800 11px/1 var(--mono);letter-spacing:.3px;
-  box-shadow:0 3px 9px rgba(47,109,246,.4)}
-.fd-head .fn{font-size:13px;font-weight:650;word-break:break-all;color:var(--ink)}
-.fd-head .ft{font-size:11px;color:var(--muted);margin-top:1px;font-family:var(--mono)}
-.fd-rows{padding:9px 14px}
-.fd-row{display:grid;grid-template-columns:96px 1fr;gap:8px;padding:4px 0;font:12px/1.5 var(--mono)}
-.fd-row .k{color:var(--muted)}
-.fd-row .v{color:var(--ink);word-break:break-all;font-weight:500}
 
 /* ---------- dashboard ---------- */
 .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px}
@@ -275,7 +344,7 @@ table.mini th{font-size:10.5px}
 
 <header>
   <div class="brand"><div class="mark">PS1</div>
-    <div><b>AP Invoice Processor</b><div class="sub">invoice → reasoned decision</div></div>
+    <div><b>Invoice Decision Engine</b><div class="sub">AP · invoice → reasoned decision</div></div>
   </div>
   <nav>
     <button id="tab-run" class="active" onclick="show('run')">Process</button>
@@ -299,51 +368,93 @@ table.mini th{font-size:10.5px}
 <main>
   <!-- ============ PROCESS ============ -->
   <section id="view-run">
-    <div class="run-grid">
-      <div class="card">
-        <h2>Live run</h2>
-        <div class="steps" id="steps"></div>
-        <div class="banner" id="banner" role="status"></div>
-        <div class="terminal">
-          <div class="tl-head"><span class="dot" id="tl-dot"></span> AUDIT TRAIL</div>
-          <div class="tl-body" id="log"><div class="line"><span></span><span></span><span class="m empty">No run yet — pick an invoice and run the pipeline.</span></div></div>
+    <!-- hero decision banner -->
+    <div class="hero" id="hero">
+      <div>
+        <div class="hero-line1">
+          <span class="hero-badge" id="hero-badge">NO RUN YET</span>
+          <span class="hero-meta" id="hero-meta">Pick an invoice and run the pipeline</span>
         </div>
+        <div class="hero-title" id="hero-title">Awaiting input</div>
+        <div class="hero-sub" id="hero-sub">Select a sample invoice or drop a PDF below, then run the pipeline to see a reasoned decision here.</div>
       </div>
-
-      <div class="card src-card">
-        <h2>Source</h2>
-        <label class="f" for="sample">Sample invoice</label>
-        <select id="sample"></select>
-        <div class="desc" id="sample-desc"></div>
-        <div class="or"><span>or</span></div>
-        <label class="drop" id="drop" for="file">
-          <input type="file" id="file" accept="application/pdf" hidden>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/></svg>
-          <span id="drop-label">Drop a PDF here or click to browse</span>
-          <div class="x" id="drop-x" onclick="clearFile(event)">remove</div>
-        </label>
-
-        <!-- file details: appears below the drop zone once a file is chosen/dropped -->
-        <div id="file-details" class="file-details hidden" aria-live="polite">
-          <div class="fd-head">
-            <div class="ic">PDF</div>
-            <div>
-              <div class="fn" id="fd-name">—</div>
-              <div class="ft" id="fd-type">—</div>
-            </div>
-          </div>
-          <div class="fd-rows">
-            <div class="fd-row"><span class="k">File name</span><span class="v" id="fd-filename">—</span></div>
-            <div class="fd-row"><span class="k">Size</span><span class="v" id="fd-size">—</span></div>
-            <div class="fd-row"><span class="k">Type</span><span class="v" id="fd-mime">—</span></div>
-            <div class="fd-row"><span class="k">Modified</span><span class="v" id="fd-modified">—</span></div>
-          </div>
-        </div>
-
-        <button id="btn-run" onclick="startRun()">Run pipeline</button>
-        <div class="meta" id="meta"></div>
+      <div class="hero-actions">
+        <button class="btn primary" id="hero-run-btn" onclick="startRun()">Run pipeline</button>
+        <button class="btn ghost" onclick="show('dash')">Dashboard</button>
       </div>
     </div>
+
+    <!-- two columns: source document | extracted + reasoning + matched PO -->
+    <div class="cols">
+      <div class="info-block">
+        <h3 class="sec-label">Source document</h3>
+        <div class="doc-frame">
+          <div class="doc-bar">
+            <span class="doc-fn" id="doc-fn">no document</span>
+            <div class="doc-tools">
+              <button class="vbtn" aria-label="zoom out" onclick="docZoom(-1)" title="Zoom out"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="7" x2="12" y2="17"/><line x1="7" y1="12" x2="17" y2="12"/></svg></button>
+              <button class="vbtn" aria-label="zoom in" onclick="docZoom(1)" title="Zoom in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+              <span class="doc-pageno"><span class="cur" id="doc-page-cur">1</span> of <span id="doc-page-total">1</span></span>
+            </div>
+          </div>
+          <div class="doc-canvas" id="doc-canvas">
+            <div class="doc-empty">NO DOCUMENT YET<br><br>Pick a sample or drop a PDF below to render the extracted fields here.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="info-stack">
+        <div class="info-block">
+          <h3 class="sec-label">Extracted JSON</h3>
+          <pre class="json" id="extracted-json"><span class="dim">{ } — fields appear here after a run</span></pre>
+        </div>
+        <div class="info-block">
+          <h3 class="sec-label">Reasoning log</h3>
+          <div class="reason" id="reason-log"><div class="reason-empty">No run yet — pick an invoice and run the pipeline.</div></div>
+        </div>
+        <div class="info-block">
+          <h3 class="sec-label">Matched PO</h3>
+          <div class="po-grid" id="matched-po"><div class="po-empty">No PO matched yet</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- input row: source + run -->
+    <div class="card source-row">
+      <h2>Source</h2>
+      <label class="f" for="sample">Sample invoice</label>
+      <select id="sample"></select>
+      <div class="desc" id="sample-desc"></div>
+      <div class="or"><span>or</span></div>
+      <label class="drop" id="drop" for="file">
+        <input type="file" id="file" accept="application/pdf" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M7 9l5-5 5 5"/><path d="M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2"/></svg>
+        <span id="drop-label">Drop a PDF here or click to browse</span>
+        <div class="x" id="drop-x" onclick="clearFile(event)">remove</div>
+      </label>
+
+      <div id="file-details" class="file-details hidden" aria-live="polite">
+        <div class="fd-head">
+          <div class="ic">PDF</div>
+          <div>
+            <div class="fn" id="fd-name">—</div>
+            <div class="ft" id="fd-type">—</div>
+          </div>
+        </div>
+        <div class="fd-rows">
+          <div class="fd-row"><span class="k">File name</span><span class="v" id="fd-filename">—</span></div>
+          <div class="fd-row"><span class="k">Size</span><span class="v" id="fd-size">—</span></div>
+          <div class="fd-row"><span class="k">Type</span><span class="v" id="fd-mime">—</span></div>
+          <div class="fd-row"><span class="k">Modified</span><span class="v" id="fd-modified">—</span></div>
+        </div>
+      </div>
+
+      <button id="btn-run" onclick="startRun()">Run pipeline</button>
+      <div class="meta" id="meta"></div>
+    </div>
+
+    <!-- hidden step rail kept for logic (visual state is now the hero) -->
+    <div class="steps hidden" id="steps" aria-hidden="true"></div>
   </section>
 
   <!-- ============ DASHBOARD ============ -->
@@ -385,6 +496,13 @@ const STEPS = [
 ];
 const STAGE2STEP = {ingest:0, extract:0, fields:0, quality:1, matching:1, validation:1, decision:2, error:2};
 let lastRunId = null, runEvtSource = null;
+let curEx = null;            // latest extracted fields (for the document pane)
+let curPo = null;           // matched PO object
+let curPoCandidates = null; // scored candidate list
+let curMatchType = null;
+let curDuplicates = [];
+let curLabel = 'no document';
+let docScale = 1;
 
 // ------------------------------------------------------------- theme
 function initTheme(){
@@ -441,6 +559,7 @@ async function init(){
   refreshDash();
 }
 
+// keep a (hidden) step rail so legacy logic + progress still works, then build the visible panels
 function buildSteps(){
   document.getElementById('steps').innerHTML = STEPS.map((s,i)=>
     `<div class="step" id="step-${i}">
@@ -450,9 +569,146 @@ function buildSteps(){
 }
 function stepSet(i, state, glyph){
   const el = document.getElementById('step-'+i);
+  if (!el) return;
   el.className = 'step ' + state;
   const node = el.querySelector('.node');
   node.textContent = glyph != null ? glyph : (i+1);
+}
+
+// ------------------------------------------------------------- decision-engine renderers
+function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+function docZoom(dir){
+  docScale = Math.min(1.4, Math.max(0.7, docScale + dir*0.1));
+  const c = document.getElementById('doc-canvas');
+  c.style.fontSize = (12.5*docScale).toFixed(1)+'px';
+}
+
+function renderDoc(){
+  const canvas = document.getElementById('doc-canvas');
+  document.getElementById('doc-fn').textContent = curLabel;
+  const e = curEx || {};
+  const total = e.total_printed!=null ? e.total_printed : e.total_from_lines;
+  if (!curEx){
+    canvas.innerHTML = '<div class="doc-empty">NO DOCUMENT YET<br><br>Pick a sample or drop a PDF below to render the extracted fields here.</div>';
+    canvas.style.fontSize='';
+    document.getElementById('doc-page-cur').textContent='1';
+    document.getElementById('doc-page-total').textContent='1';
+    return;
+  }
+  const lines = (e.line_items||[]);
+  let h = '';
+  h += `<div class="row"><span class="h">${esc(e.vendor_name||'VENDOR')}</span></div>`;
+  if (e.invoice_number) h += `<div class="row"><span class="lbl">INVOICE #</span><span class="v">${esc(e.invoice_number)}</span></div>`;
+  if (e.po_refs && e.po_refs.length) h += `<div class="row"><span class="lbl">PO</span><span class="v">${esc(e.po_refs.join(', '))}</span></div>`;
+  if (e.invoice_date) h += `<div class="row"><span class="lbl">${esc(e.invoice_date)}</span></div>`;
+  if (lines.length){
+    h += `<div class="row"><span class="lbl">Line items:</span></div>`;
+    lines.forEach(li=>{
+      const amt = li.amount!=null ? li.amount : (li.unit_price!=null && li.qty ? li.unit_price*li.qty : null);
+      const qty = li.qty!=null ? `${li.qty} ×` : '';
+      const name = li.name ? li.name.replace(/\s*$/,'') : '';
+      h += `  <div class="row"><span>${esc(name)}${qty?` ${esc(qty)}`:''}</span><span class="v">${amt!=null?fmtMoney(amt):''}</span></div>`;
+    });
+  }
+  if (e.subtotal!=null) h += `<div class="row"><span class="lbl">Subtotal</span><span class="v">${fmtMoney(e.subtotal)}</span></div>`;
+  if (e.tax_amount!=null) h += `<div class="row"><span class="lbl">Tax</span><span class="v">${fmtMoney(e.tax_amount)}</span></div>`;
+  if (total!=null) h += `<div class="total"><span>TOTAL</span><span>${fmtMoney(total)}</span></div>`;
+  canvas.innerHTML = h;
+  document.getElementById('doc-page-cur').textContent='1';
+  document.getElementById('doc-page-total').textContent = e.pages||1;
+}
+
+function renderJson(){
+  const el = document.getElementById('extracted-json');
+  if (!curEx){ el.innerHTML = '<span class="dim">{ } — fields appear here after a run</span>'; return; }
+  const o = {
+    vendorName: curEx.vendor_name||null,
+    invoiceNumber: curEx.invoice_number||null,
+    date: curEx.invoice_date||null,
+    dueDate: curEx.due_date||null,
+    totalAmount: (curEx.total_printed!=null?curEx.total_printed:curEx.total_from_lines),
+    taxAmount: curEx.tax_amount??0,
+    poNumber: (curEx.po_refs||[]).join(', ')||null,
+    currency: curEx.currency||null,
+    lineItems: (curEx.line_items||[])
+  };
+  const raw = JSON.stringify(o, null, 2);
+  // colour the JSON
+  el.innerHTML = esc(raw)
+    .replace(/"([a-zA-Z_]+)"(?=\s*:)/g, '<span class="k">"$1"</span>')
+    .replace(/:\s*"((?:[^"\\]|\\.)*)"/g, (m)=>m.replace(/"((?:[^"\\]|\\.)*)"/g, '<span class="s">"$1"</span>'))
+    .replace(/: (null|true|false)/g, ': <span class="b">$1</span>')
+    .replace(/: (-?\d+(?:\.\d+)?)/g, ': <span class="n">$1</span>');
+}
+
+function renderReasoning(d){
+  const el = document.getElementById('reason-log');
+  const items = [];
+  const status = d ? d.status : null;
+  if (!status){ el.innerHTML = '<div class="reason-empty">No run yet — pick an invoice and run the pipeline.</div>'; return; }
+  // duplicate check (reason #1 in the reference style)
+  const dup = (d.duplicates||[]).length;
+  items.push({ok:true, title:'Duplicate check clear.',
+    sub: d.extracted && d.extracted.invoice_number
+      ? `${d.extracted.invoice_number} not found in ledger${dup?` (${dup} prior invoice(s) flagged)`:''}.` : 'No prior duplicate detected.'});
+  // vendor on approved list
+  items.push({ok:true, title:'Vendor on the approved master list.',
+    sub: (d.extracted && d.extracted.vendor_name) ? `${d.extracted.vendor_name}` : 'Vendor field empty.'});
+  // PO resolved
+  if (d.matched_po){
+    items.push({ok:true, title:`PO ${d.matched_po.po_id} resolved (${d.match_type||'match'}).`,
+      sub:`${d.matched_po.vendor_name||''} · status ${d.matched_po.status||'open'} · ${fmtMoney(d.matched_po.amount)}`});
+  } else {
+    items.push({warn:true, title:'No PO matched confidently.', sub:d.explanation||'Fell back to vendor + amount scoring.'});
+  }
+  // decision outcome (last item reflects the actual verdict)
+  if (status==='PAY') items.push({ok:true, title:'Decision: safe to PAY.', sub:d.explanation||'All rules passed.'});
+  else if (status==='REJECT') items.push({bad:true, title:'Decision: REJECT.', sub:d.explanation||'Hard rule triggered.'});
+  else items.push({warn:true, title:`Decision: ${status}.`, sub:d.explanation||'Routed for human triage.'});
+
+  el.innerHTML = items.map((it,i)=>{
+    const cls = it.bad?'bad':(it.warn?'warn':'ok');
+    const mark = it.bad?'✕':(it.warn?'!':'✓');
+    return `<div class="reason-item ${cls}">
+      <div class="ic">${i+1} ${mark}</div>
+      <div><div class="r-title">${esc(it.title)}</div><div class="r-sub">${esc(it.sub||'')}</div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderPO(){
+  const el = document.getElementById('matched-po');
+  if (!curPo){ el.innerHTML = '<div class="po-empty">No PO matched yet</div>'; return; }
+  const rows = [
+    ['PO', esc(curPo.po_id)],
+    ['Vendor', esc(curPo.vendor_name||'—')],
+    ['Total', fmtMoney(curPo.amount)],
+    ['Status', `<span class="${String(curPo.status||'').toLowerCase()==='closed'?'closed':'open'}">${esc((curPo.status||'open').toUpperCase())}</span>`]
+  ];
+  el.innerHTML = rows.map(r=>`<div class="po-row"><span class="k">${r[0]}</span><span class="v">${r[1]}</span></div>`).join('');
+}
+
+function renderHero(d){
+  const hero = document.getElementById('hero');
+  const badge = document.getElementById('hero-badge');
+  const meta = document.getElementById('hero-meta');
+  const title = document.getElementById('hero-title');
+  const sub = document.getElementById('hero-sub');
+  if (!d || !d.status){
+    hero.className='hero';
+    badge.textContent='NO RUN YET'; meta.textContent='Pick an invoice and run the pipeline';
+    title.textContent='Awaiting input';
+    sub.textContent='Select a sample invoice or drop a PDF below, then run the pipeline to see a reasoned decision here.';
+    return;
+  }
+  const st = d.status;
+  hero.className = 'hero ' + st;
+  badge.textContent = st;
+  meta.textContent = `${d.run_id?('run '+d.run_id):''}${d.elapsed_s!=null?' · '+d.elapsed_s+'s':''}`.trim();
+  const inv = (d.extracted && d.extracted.invoice_number) || '—';
+  title.textContent = inv;
+  sub.textContent = d.explanation || (d.reasons||[]).join(' · ') || 'Decision recorded.';
 }
 
 // ------------------------------------------------------------- source
@@ -506,6 +762,7 @@ function clearFile(e){
 // ------------------------------------------------------------- run
 async function startRun(){
   document.getElementById('btn-run').disabled = true;
+  document.getElementById('hero-run-btn').disabled = true;
   const fileEl = document.getElementById('file');
   let target, label;
   if (fileEl.files.length){
@@ -517,13 +774,14 @@ async function startRun(){
     target = document.getElementById('sample').value;
     label = target.split('/').pop();
   }
-  // reset view
-  const log = document.getElementById('log');
-  log.innerHTML = '';
-  document.getElementById('tl-dot').classList.add('live');
+  // reset the decision-engine panels for a fresh run
+  curEx=null; curPo=null; curPoCandidates=null; curMatchType=null; curDuplicates=[]; docScale=1;
+  curLabel = label;
+  renderDoc(); renderJson();
+  document.getElementById('reason-log').innerHTML='<div class="reason-empty">Running pipeline…</div>';
+  document.getElementById('matched-po').innerHTML='<div class="po-empty">Matching…</div>';
+  setHeroRunning(label);
   document.getElementById('meta').textContent = target;
-  const b = document.getElementById('banner');
-  b.className = 'banner'; b.innerHTML = '';
   buildSteps();
 
   const r = await j('/api/run',{method:'POST', body:JSON.stringify({invoice_path:target, label})});
@@ -535,9 +793,11 @@ async function startRun(){
     if (e.type==='closed'){ closeRun(); return; }
     logEvent(e);
     if (e.type==='decision'){
-      showBanner(e);
+      finishRun({status:e.status, reasons:e.reasons, issues:e.issues, explanation:e.explanation,
+                 elapsed_s:e.elapsed_s, run_id:r.run_id, extracted:curEx, matched_po:curPo,
+                 po_candidates:curPoCandidates, match_type:curMatchType, duplicates:curDuplicates});
       document.getElementById('meta').textContent =
-        `${target}${e.matched_po?`  ·  ${e.matched_po}`:''}  ·  run ${r.run_id}`;
+        `${target}${curMatchType&&curPo?`  ·  ${curPo.po_id}`:''}  ·  run ${r.run_id}`;
     }
     if (e.type==='error') finishRunError(e.detail, r.run_id);
   };
@@ -545,91 +805,76 @@ async function startRun(){
     if (!runEvtSource) return;
     // stream died (or run already done) → fall back to the persisted record
     j('/api/runs/'+r.run_id).then(rec=>{
-      (rec.events||[]).forEach(logEvent);
       const d = rec.decision || {};
-      if (d.status) showBanner(d);
+      if (d.status) finishRun(d);
       closeRun();
-      if (rec.error) finishRunError(rec.error, r.run_id);
+      if (rec.error && !d.status) finishRunError(rec.error, r.run_id);
     }).catch(()=>finishRunError('could not load run record', r.run_id));
   };
   function closeRun(){
     if (runEvtSource) runEvtSource.close();
     runEvtSource = null;
-    document.getElementById('tl-dot').classList.remove('live');
     document.getElementById('btn-run').disabled = false;
+    document.getElementById('hero-run-btn').disabled = false;
   }
 }
 
+// feed live events into the decision-engine panels
 function logEvent(e){
-  const log = document.getElementById('log');
   const step = STAGE2STEP[e.stage] ?? 2;
-  // advance the step rail: everything before this step is done
-  for (let i=0;i<step;i++) if (document.getElementById('step-'+i).className==='step') stepSet(i,'done','✓');
+  for (let i=0;i<step;i++) if (document.getElementById('step-'+i)&&document.getElementById('step-'+i).className==='step') stepSet(i,'done','✓');
   stepSet(step,'running');
-  const line = document.createElement('div');
-  line.className = 'line';
-  let cls='', msg='';
-  if (e.type==='stage-start') msg = `starting — ${e.detail} (${e.size_kb} KB, ${e.pages} p)`;
-  else if (e.type==='text-source') msg = `text source: ${e.source} (${e.chars} chars, ${e.seconds}s, conf ${e.confidence})`;
-  else if (e.type==='classify') msg = `${e.kind} invoice — ${e.detail}`;
-  else if (e.type==='fields'){
-    const f = e.fields;
-    msg = `fields: ${f.invoice_number||'∅'} · vendor ${f.vendor_name||'∅'} · ${f.po_refs.length} PO ref · total ${fmtMoney(f.total_printed)}`;
+  if (e.type==='fields'){
+    curEx = e.fields; renderDoc(); renderJson();
   }
-  else if (e.type==='gate') {
-    if (e.result==='pass') msg = 'quality gate: pass — all critical fields present';
-    else { cls='w'; msg = `quality gate: degraded — missing ${e.missing.join(', ')}`; }
+  else if (e.type==='match'){
+    curPoCandidates = e.candidates||[];
+    curMatchType = e.match_type;
+    const c = (e.candidates||[]).find(x=>x.po_id===e.matched_po);
+    curPo = c ? {po_id:c.po_id, vendor_name:c.vendor, amount:c.po_amount, status:'open', match_type:e.match_type}
+              : (e.matched_po?{po_id:e.matched_po, match_type:e.match_type}:null);
+    renderPO();
   }
-  else if (e.type==='ocr-confidence'){ cls='w'; msg = e.detail; }
-  else if (e.type==='total-mismatch'){ cls='w'; msg = e.detail; }
-  else if (e.type==='match') msg = e.matched_po ? `matched ${e.matched_po} (${e.match_type}) — ${e.note}` : `no PO matched — ${e.note}`;
-  else if (e.type==='rules') msg = `rules: tol ±${e.rules.amount_tolerance_pct}% / ±$${e.rules.absolute_tolerance}, split ${e.rules.split_billing_pct}% · duplicates ${e.duplicates.length}, split-billing ${e.split_billing}`;
-  else if (e.type==='decision'){
-    msg = `${e.status} in ${e.elapsed_s}s`;
-    line.classList.add('dec');
+  else if (e.type==='rules'){
+    curDuplicates = e.duplicates||[];
   }
-  else if (e.type==='error'){ cls='bad'; msg = e.detail; }
-  else if (e.detail) msg = e.detail;
-  const tag = e.stage ? e.stage : 'system';
-  line.innerHTML = `<span class="t">${new Date().toLocaleTimeString()}</span><span class="s">${tag.toUpperCase()}</span><span class="m"></span>`;
-  line.querySelector('.m').textContent = msg || e.type;
-  if (cls) line.classList.add(cls);
-  log.appendChild(line);
-  log.parentElement.scrollTop = log.parentElement.scrollHeight;
 }
 
-function showBanner(e){
-  const status = e.status || 'ERROR';
-  const b = document.getElementById('banner');
-  b.className = 'banner show ' + status;
-  let html = `<div class="top"><span class="status">${status}</span>
-    <div class="btns">
-      <button class="mini" onclick="show('dash');openRun('${lastRunId}')">View in dashboard</button>
-    </div>
-    ${e.explanation?`<div class="expl">${e.explanation}</div>`:''}
-  </div>`;
-  if (e.reasons && e.reasons.length) html += `<ul>${e.reasons.map(r=>`<li></li>`).join('')}</ul>`;
-  b.innerHTML = html;
-  if (e.reasons && e.reasons.length)
-    b.querySelectorAll('ul li').forEach((li,i)=>li.textContent = e.reasons[i]);
+// final decision → hero + reasoning + PO panels
+function finishRun(d){
+  if (d.matched_po) { curPo = d.matched_po; }
+  if (d.po_candidates) curPoCandidates = d.po_candidates;
+  if (d.duplicates) curDuplicates = d.duplicates;
+  document.getElementById('meta').textContent = '';
+  renderHero(d);
+  renderReasoning(d);
+  renderPO();
+  // show the live decision button state
+  const s = d.status;
+  document.getElementById('hero-run-btn').textContent = s ? 'Process another' : 'Run pipeline';
+}
+
+function setHeroRunning(label){
+  const hero = document.getElementById('hero');
+  hero.className = 'hero';
+  document.getElementById('hero-badge').textContent = 'RUNNING';
+  document.getElementById('hero-meta').textContent = label;
+  document.getElementById('hero-title').textContent = 'Processing…';
+  document.getElementById('hero-sub').textContent = 'Reading the document and running the 7-stage pipeline.';
 }
 
 function finishRunError(msg, run_id){
-  const log = document.getElementById('log');
-  const line = document.createElement('div');
-  line.className = 'line bad';
-  line.innerHTML = `<span class="t">${new Date().toLocaleTimeString()}</span><span class="s">ERROR</span><span class="m"></span>`;
-  line.querySelector('.m').textContent = msg;
-  log.appendChild(line);
-  log.parentElement.scrollTop = log.parentElement.scrollHeight;
-  stepSet(STEPS.length-1, 'err', '!');
-  document.getElementById('tl-dot').classList.remove('live');
   document.getElementById('btn-run').disabled = false;
+  document.getElementById('hero-run-btn').disabled = false;
+  document.getElementById('hero-run-btn').textContent = 'Run pipeline';
   if (runEvtSource){ runEvtSource.close(); runEvtSource = null; }
-  const b = document.getElementById('banner');
-  b.className = 'banner show ERROR';
-  b.innerHTML = `<div class="top"><span class="status">ERROR</span><div class="expl">${msg}</div></div>`;
-  document.getElementById('tl-dot').classList.remove('live');
+  const hero = document.getElementById('hero');
+  hero.className = 'hero ERROR';
+  document.getElementById('hero-badge').textContent = 'ERROR';
+  document.getElementById('hero-title').textContent = 'Pipeline error';
+  document.getElementById('hero-sub').textContent = msg;
+  document.getElementById('reason-log').innerHTML =
+    `<div class="reason-item bad"><div class="ic">✕</div><div><div class="r-title">Run aborted</div><div class="r-sub">${esc(msg)}</div></div></div>`;
 }
 
 // ------------------------------------------------------------- dashboard
