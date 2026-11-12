@@ -1,0 +1,32 @@
+[
+  {
+    "file": "01-happy-path.pdf",
+    "description": "clean digital invoice, itemised, explicit PO ref \u2014 expect PAY",
+    "expect": "PAY"
+  },
+  {
+    "file": "02-duplicate.pdf",
+    "description": "invoice number already in processed register \u2014 expect REJECT (duplicate)",
+    "expect": "REJECT (duplicate)"
+  },
+  {
+    "file": "03-split-billing.pdf",
+    "description": "tranche 2 of 3 against a larger PO \u2014 expect REVIEW (under PO, split billing)",
+    "expect": "REVIEW (under PO, split billing)"
+  },
+  {
+    "file": "04-missing-fields.pdf",
+    "description": "no invoice number, no date, PO only in narrative \u2014 expect REVIEW (missing fields)",
+    "expect": "REVIEW (missing fields)"
+  },
+  {
+    "file": "05-scanned.pdf",
+    "description": "image-only PDF, no text layer \u2014 expect PAY via OCR path",
+    "expect": "PAY via OCR path"
+  },
+  {
+    "file": "06-dummy-metro.pdf",
+    "description": "tax-separated itemised invoice \u2014 expect PAY, then REVIEW on re-upload (re-issue)",
+    "expect": "PAY (then REVIEW if re-run)"
+  }
+]

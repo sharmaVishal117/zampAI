@@ -1,0 +1,1765 @@
+[
+ {
+  "file": "01-happy-path.pdf",
+  "description": "clean itemised invoice \u2014 should PAY against PO-1101",
+  "expected": "PAY",
+  "run_id": "be51525b6aaf",
+  "events": [
+   {
+    "stage": "ingest",
+    "type": "stage-start",
+    "name": "Ingest & classify",
+    "detail": "01-happy-path.pdf",
+    "size_kb": 2,
+    "pages": 1
+   },
+   {
+    "stage": "extract",
+    "type": "text-source",
+    "source": "text-layer",
+    "seconds": 0.01,
+    "confidence": 0.9,
+    "chars": 695
+   },
+   {
+    "stage": "ingest",
+    "type": "classify",
+    "kind": "digital",
+    "detail": "machine-readable text layer found \u2014 treat as digital invoice"
+   },
+   {
+    "stage": "fields",
+    "type": "fields",
+    "fields": {
+     "text_source": "text-layer",
+     "ocr_seconds": 0.01,
+     "confidence": 0.9,
+     "pages": 1,
+     "invoice_number": "INV-2026-0148",
+     "invoice_date": "2026-10-12",
+     "due_date": "2026-11-11",
+     "vendor_name": "ACME INDUSTRIAL SUPPLY LTD.",
+     "vendor_tax_id": "98-7654321",
+     "po_refs": [
+      "PO-1101"
+     ],
+     "currency": "USD",
+     "line_items": 3,
+     "total_from_lines": 1234.56,
+     "total_printed": 1234.56,
+     "subtotal": 1234.56,
+     "tax_amount": 98.0,
+     "evidence": {
+      "po_refs": [
+       "PO Number: PO-1101"
+      ],
+      "tax_id": "Tax ID: 98-7654321",
+      "invoice_number": "Invoice Number: INV-2026-0148",
+      "invoice_date": "Invoice Date: 2026-10-12",
+      "due_date": "Due Date: 2026-11-11",
+      "total_from_lines": "sum of 3 line items",
+      "total_printed": "Total Due $1,234.56",
+      "subtotal": "Subtotal $1,234.56",
+      "tax_amount": "1800 Commerce Blvd, Dayton, OH 45402 \u00b7 +1 (937) 555-0142 \u00b7 Tax ID: 98-7654321"
+     }
+    },
+    "notes": [
+     "vendor name inferred via letterhead heuristic (largest text on page 1)",
+     "3 line items extracted; line-item total 1,234.56",
+     "printed total 1,234.56 read from line: \"Total Due $1,234.56\"",
+     "subtotal 1,234.56 + tax 98.00 = 1,332.56 (tax separated)",
+     "printed total matches sum of line items \u2713"
+    ],
+    "warnings": []
+   },
+   {
+    "stage": "quality",
+    "type": "gate",
+    "result": "pass",
+    "detail": "all critical fields present"
+   },
+   {
+    "stage": "matching",
+    "type": "match",
+    "matched_po": "PO-1101",
+    "match_type": "exact-ref",
+    "note": "PO PO-1101 matched by explicit reference on the invoice",
+    "candidates": [
+     {
+      "po_id": "PO-1101",
+      "vendor": "Acme Industrial Supply Ltd.",
+      "po_amount": 1234.56,
+      "score": 155,
+      "why": [
+       "explicit PO reference \"PO-1101\" on the invoice",
+       "vendor name \"ACME INDUSTRIAL SUPPLY LTD.\" matches PO vendor \"Acme Industrial Supply Ltd.\"",
+       "invoice total 1,234.56 within 2.0% of PO 1,234.56"
+      ],
+      "diff_pct": 0.0
+     },
+     {
+      "po_id": "PO-1204",
+      "vendor": "Global Office Supply",
+      "po_amount": 4320.0,
+      "score": 0,
+      "why": [],
+      "diff_pct": 71.42222222222222
+     },
+     {
+      "po_id": "PO-1205",
+      "vendor": "Global Office Supply",
+      "po_amount": 890.0,
+      "score": 0,
+      "why": [],
+      "diff_pct": 38.71460674157303
+     },
+     {
+      "po_id": "PO-1310",
+      "vendor": "TechParts Inc",
+      "po_amount": 5100.0,
+      "score": 0,
+      "why": [],
+      "diff_pct": 75.79294117647059
+     },
+     {
+      "po_id": "PO-1402",
+      "vendor": "Metro Facilities Corp",
+      "po_amount": 4000.0,
+      "score": 0,
+      "why": [],
+      "diff_pct": 69.136
+     }
+    ]
+   },
+   {
+    "stage": "validation",
+    "type": "rules",
+    "rules": {
+     "amount_tolerance_pct": 2.0,
+     "absolute_tolerance": 5.0,
+     "split_billing_pct": 5.0,
+     "hold_after_seconds": 180,
+     "duplicate_window_days": 365,
+     "require_invoice_number": true,
+     "max_line_item_total_delta_pct": 1.0
+    },
+    "duplicates": [],
+    "split_billing": false
+   },
+   {
+    "stage": "decision",
+    "type": "decision",
+    "status": "PAY",
+    "reasons": [
+     "AMOUNT OK \u2014 invoice 1,234.56 vs PO 1,234.56 (diff 0.00%, tolerance \u00b12.0%)"
+    ],
+    "issues": [],
+    "explanation": "Invoice INV-2026-0148 from ACME INDUSTRIAL SUPPLY LTD., 1,234.56 USD. Matched PO PO-1101 (exact-ref). Amount within tolerance, vendor approved, no duplicates, no missing critical fields. Safe to queue for payment.",
+    "elapsed_s": 0.03
+   }
+  ],
+  "decision": {
+   "status": "PAY",
+   "reasons": [
+    "AMOUNT OK \u2014 invoice 1,234.56 vs PO 1,234.56 (diff 0.00%, tolerance \u00b12.0%)"
+   ],
+   "issues": [],
+   "matched_po": {
+    "po_id": "PO-1101",
+    "vendor_name": "Acme Industrial Supply Ltd.",
+    "description": "Steel brackets & fasteners \u2014 Production line 3",
+    "amount": 1234.56,
+    "currency": "USD",
+    "issued": "2026-10-01",
+    "status": "open"
+   },
+   "match_type": "exact-ref",
+   "amount_to_pay": 1234.56,
+   "po_candidates": [
+    {
+     "po": {
+      "po_id": "PO-1101",
+      "vendor_name": "Acme Industrial Supply Ltd.",
+      "description": "Steel brackets & fasteners \u2014 Production line 3",
+      "amount": 1234.56,
+      "currency": "USD",
+      "issued": "2026-10-01",
+      "status": "open"
+     },
+     "score": 155,
+     "why": [
+      "explicit PO reference \"PO-1101\" on the invoice",
+      "vendor name \"ACME INDUSTRIAL SUPPLY LTD.\" matches PO vendor \"Acme Industrial Supply Ltd.\"",
+      "invoice total 1,234.56 within 2.0% of PO 1,234.56"
+     ],
+     "ref_exact": true,
+     "diff_pct": 0.0,
+     "amount": 1234.56
+    },
+    {
+     "po": {
+      "po_id": "PO-1204",
+      "vendor_name": "Global Office Supply",
+      "description": "Office supplies \u2014 Q4 replenishment",
+      "amount": 4320.0,
+      "currency": "USD",
+      "issued": "2026-10-15",
+      "status": "open"
+     },
+     "score": 0,
+     "why": [],
+     "ref_exact": false,
+     "diff_pct": 71.42222222222222,
+     "amount": 1234.56
+    },
+    {
+     "po": {
+      "po_id": "PO-1205",
+      "vendor_name": "Global Office Supply",
+      "description": "Warehouse consumables",
+      "amount": 890.0,
+      "currency": "USD",
+      "issued": "2026-10-20",
+      "status": "open"
+     },
+     "score": 0,
+     "why": [],
+     "ref_exact": false,
+     "diff_pct": 38.71460674157303,
+     "amount": 1234.56
+    },
+    {
+     "po": {
+      "po_id": "PO-1310",
+      "vendor_name": "TechParts Inc",
+      "description": "Replacement circuit boards (part #4471)",
+      "amount": 5100.0,
+      "currency": "USD",
+      "issued": "2026-09-28",
+      "status": "open"
+     },
+     "score": 0,
+     "why": [],
+     "ref_exact": false,
+     "diff_pct": 75.79294117647059,
+     "amount": 1234.56
+    },
+    {
+     "po": {
+      "po_id": "PO-1402",
+      "vendor_name": "Metro Facilities Corp",
+      "description": "Facility maintenance contract \u2014 3-month split billing (issued 3 POs)",
+      "amount": 4000.0,
+      "currency": "USD",
+      "issued": "2026-10-01",
+      "status": "open"
+     },
+     "score": 0,
+     "why": [],
+     "ref_exact": false,
+     "diff_pct": 69.136,
+     "amount": 1234.56
+    }
+   ],
+   "explanation": "Invoice INV-2026-0148 from ACME INDUSTRIAL SUPPLY LTD., 1,234.56 USD. Matched PO PO-1101 (exact-ref). Amount within tolerance, vendor approved, no duplicates, no missing critical fields. Safe to queue for payment.",
+   "extracted": {
+    "text_source": "text-layer",
+    "ocr_seconds": 0.01,
+    "confidence": 0.9,
+    "pages": 1,
+    "invoice_number": "INV-2026-0148",
+    "invoice_date": "2026-10-12",
+    "due_date": "2026-11-11",
+    "vendor_name": "ACME INDUSTRIAL SUPPLY LTD.",
+    "vendor_tax_id": "98-7654321",
+    "po_refs": [
+     "PO-1101"
+    ],
+    "currency": "USD",
+    "line_items": [
+     {
+      "name": "Steel brackets, 12-gauge (part #A-118)",
+      "qty": "120",
+      "unit_price": 4.1,
+      "amount": 492.0,
+      "raw": "Steel brackets, 12-gauge (part #A-118) 120 $4.10 $492.00",
+      "line_no": 15
+     },
+     {
+      "name": "Hex bolts M10x40, zinc, bulk",
+      "qty": "2000",
+      "unit_price": 0.36,
+      "amount": 720.0,
+      "raw": "Hex bolts M10x40, zinc, bulk 2000 $0.36 $720.00",
+      "line_no": 16
+     },
+     {
+      "name": "Anti-vibration mounts, medium",
+      "qty": "12",
+      "unit_price": 1.88,
+      "amount": 22.56,
+      "raw": "Anti-vibration mounts, medium 12 $1.88 $22.56",
+      "line_no": 17
+     }
+    ],
+    "total_from_lines": 1234.56,
+    "total_printed": 1234.56,
+    "subtotal": 1234.56,
+    "tax_amount": 98.0,
+    "evidence": {
+     "po_refs": [
+      "PO Number: PO-1101"
+     ],
+     "tax_id": "Tax ID: 98-7654321",
+     "invoice_number": "Invoice Number: INV-2026-0148",
+     "invoice_date": "Invoice Date: 2026-10-12",
+     "due_date": "Due Date: 2026-11-11",
+     "total_from_lines": "sum of 3 line items",
+     "total_printed": "Total Due $1,234.56",
+     "subtotal": "Subtotal $1,234.56",
+     "tax_amount": "1800 Commerce Blvd, Dayton, OH 45402 \u00b7 +1 (937) 555-0142 \u00b7 Tax ID: 98-7654321"
+    }
+   },
+   "split_billing": false,
+   "duplicates": [],
+   "rules_applied": {
+    "amount_tolerance_pct": 2.0,
+    "absolute_tolerance": 5.0,
+    "split_billing_pct": 5.0,
+    "hold_after_seconds": 180,
+    "duplicate_window_days": 365,
+    "require_invoice_number": true,
+    "max_line_item_total_delta_pct": 1.0
+   }
+  }
+ },
+ {
+  "file": "02-duplicate.pdf",
+  "description": "already-paid INV-2026-0142 again \u2014 should REJECT as duplicate",
+  "expected": "REJECT",
+  "run_id": "1811a8e09145",
+  "events": [
+   {
+    "stage": "ingest",
+    "type": "stage-start",
+    "name": "Ingest & classify",
+    "detail": "02-duplicate.pdf",
+    "size_kb": 2,
+    "pages": 1
+   },
+   {
+    "stage": "extract",
+    "type": "text-source",
+    "source": "text-layer",
+    "seconds": 0.01,
+    "confidence": 0.9,
+    "chars": 744
+   },
+   {
+    "stage": "ingest",
+    "type": "classify",
+    "kind": "digital",
+    "detail": "machine-readable text layer found \u2014 treat as digital invoice"
+   },
+   {
+    "stage": "fields",
+    "type": "fields",
+    "fields": {
+     "text_source": "text-layer",
+     "ocr_seconds": 0.01,
+     "confidence": 0.9,
+     "pages": 1,
+     "invoice_number": "INV-2026-0142",
+     "invoice_date": "2026-10-21",
+     "due_date": "2026-11-20",
+     "vendor_name": "GLOBAL OFFICE SUPPLY",
+     "vendor_tax_id": "11-2233445",
+     "po_refs": [
+      "PO-1205"
+     ],
+     "currency": "USD",
+     "line_items": 4,
+     "total_from_lines": 890.0,
+     "total_printed": 890.0,
+     "subtotal": 890.0,
+     "tax_amount": 11.0,
+     "evidence": {
+      "po_refs": [
+       "PO Ref: PO-1205"
+      ],
+      "tax_id": "Tax ID: 11-2233445",
+      "invoice_number": "No: INV-2026-0142",
+      "invoice_date": "Date: 10/21/2026",
+      "due_date": "Due: 11/20/2026",
+      "total_from_lines": "sum of 4 line items",
+      "total_printed": "Total Due $890.00",
+      "subtotal": "Subtotal $890.00",
+      "tax_amount": "PO Box 447, Columbus, OH 43216 \u00b7 www.globalofficesupply.com \u00b7 Tax ID: 11-2233445"
+     }
+    },
+    "notes": [
+     "vendor name inferred via letterhead heuristic (largest text on page 1)",
+     "4 line items extracted; line-item total 890.00",
+     "printed total 890.00 read from line: \"Total Due $890.00\"",
+     "subtotal 890.00 + tax 11.00 = 901.00 (tax separated)",
+     "printed total matches sum of line items \u2713"
+    ],
+    "warnings": []
+   },
+   {
+    "stage": "quality",
+    "type": "gate",
+    "result": "pass",
+    "detail": "all critical fields present"
+   },
+   {
+    "stage": "matching",
+    "type": "match",
+    "matched_po": "PO-1205",
+    "match_type": "exact-ref",
+    "note": "PO PO-1205 matched by explicit reference on the invoice",
+    "candidates": [
+     {
+      "po_id": "PO-1205",
+      "vendor": "Global Office Supply",
+      "po_amount": 890.0,
+      "score": 155,
+      "why": [
+       "explicit PO reference \"PO-1205\" on the invoice",
+       "vendor name \"GLOBAL OFFICE SUPPLY\" matches PO vendor \"Global Office Supply\"",
+       "invoice total 890.00 within 2.0% of PO 890.00"
+      ],
+      "diff_pct": 0.0
+     },
+     {
+      "po_id": "PO-1204",
+      "vendor": "Global Office Supply",
+      "po_amount": 4320.0,
+      "score": 30,
+      "why": [
+       "vendor name \"GLOBAL OFFICE SUPPLY\" matches PO vendor \"Global Office Supply\""
+      ],
+      "diff_pct": 79.39814814814815
+     },
+     {
+      "po_id": "PO-1101",
+      "vendor": "Acme Industrial Supply Ltd.",
+      "po_amount": 1234.56,
+      "score": 0,
+      "why": [],
+      "diff_pct": 27.90953862104717
+     },
+     {
+      "po_id": "PO-1310",
+      "vendor": "TechParts Inc",
+      "po_amount": 5100.0,
+      "score": 0,
+      "why": [],
+      "diff_pct": 82.54901960784314
+     },
+     {
+      "po_id": "PO-1402",
+      "vendor": "Metro Facilities Corp",
+      "po_amount": 4000.0,
+      "score": 0,
+      "why": [],
+      "diff_pct": 77.75
+     }
+    ]
+   },
+   {
+    "stage": "validation",
+    "type": "rules",
+    "rules": {
+     "amount_tolerance_pct": 2.0,
+     "absolute_tolerance": 5.0,
+     "split_billing_pct": 5.0,
+     "hold_after_seconds": 180,
+     "duplicate_window_days": 365,
+     "require_invoice_number": true,
+     "max_line_item_total_delta_pct": 1.0
+    },
+    "duplicates": [
+     {
+      "invoice_number": "INV-2026-0142",
+      "vendor_name": "Global Office Supply",
+      "po_id": "PO-1205",
+      "amount": 890.0,
+      "currency": "USD",
+      "issued": "2026-10-21",
+      "status": "paid"
+     }
+    ],
+    "split_billing": false
+   },
+   {
+    "stage": "decision",
+    "type": "decision",
+    "status": "REJECT",
+    "reasons": [
+     "DUPLICATE \u2014 invoice INV-2026-0142 was already processed on 2026-10-21 against PO-1205 (paid)"
+    ],
+    "issues": [
+     {
+      "code": "DUPLICATE_INVOICE",
+      "severity": "blocker",
+      "message": "DUPLICATE \u2014 invoice INV-2026-0142 was already processed on 2026-10-21 against PO-1205 (paid)"
+     }
+    ],
+    "explanation": "Refused to pay: the same invoice number from the same vendor already exists in the processed-invoice register in a paid/approved state. A duplicate is the single most common AP fraud pattern and the cheapest one to catch \u2014 so this rule is deliberately hard: it rejects outright instead of routing to review.",
+    "elapsed_s": 0.03
+   }
+  ],
+  "decision": {
+   "status": "REJECT",
+   "reasons": [
+    "DUPLICATE \u2014 invoice INV-2026-0142 was already processed on 2026-10-21 against PO-1205 (paid)"
+   ],
+   "issues": [
+    {
+     "code": "DUPLICATE_INVOICE",
+     "severity": "blocker",
+     "message": "DUPLICATE \u2014 invoice INV-2026-0142 was already processed on 2026-10-21 against PO-1205 (paid)"
+    }
+   ],
+   "matched_po": {
+    "po_id": "PO-1205",
+    "vendor_name": "Global Office Supply",
+    "description": "Warehouse consumables",
+    "amount": 890.0,
+    "currency": "USD",
+    "issued": "2026-10-20",
+    "status": "open"
+   },
+   "match_type": "exact-ref",
+   "amount_to_pay": null,
+   "po_candidates": [
+    {
+     "po": {
+      "po_id": "PO-1205",
+      "vendor_name": "Global Office Supply",
+      "description": "Warehouse consumables",
+      "amount": 890.0,
+      "currency": "USD",
+      "issued": "2026-10-20",
+      "status": "open"
+     },
+     "score": 155,
+     "why": [
+      "explicit PO reference \"PO-1205\" on the invoice",
+      "vendor name \"GLOBAL OFFICE SUPPLY\" matches PO vendor \"Global Office Supply\"",
+      "invoice total 890.00 within 2.0% of PO 890.00"
+     ],
+     "ref_exact": true,
+     "diff_pct": 0.0,
+     "amount": 890.0
+    },
+    {
+     "po": {
+      "po_id": "PO-1204",
+      "vendor_name": "Global Office Supply",
+      "description": "Office supplies \u2014 Q4 replenishment",
+      "amount": 4320.0,
+      "currency": "USD",
+      "issued": "2026-10-15",
+      "status": "open"
+     },
+     "score": 30,
+     "why": [
+      "vendor name \"GLOBAL OFFICE SUPPLY\" matches PO vendor \"Global Office Supply\""
+     ],
+     "ref_exact": false,
+     "diff_pct": 79.39814814814815,
+     "amount": 890.0
+    },
+    {
+     "po": {
+      "po_id": "PO-1101",
+      "vendor_name": "Acme Industrial Supply Ltd.",
+      "description": "Steel brackets & fasteners \u2014 Production line 3",
+      "amount": 1234.56,
+      "currency": "USD",
+      "issued": "2026-10-01",
+      "status": "open"
+     },
+     "score": 0,
+     "why": [],
+     "ref_exact": false,
+     "diff_pct": 27.90953862104717,
+     "amount": 890.0
+    },
+    {
+     "po": {
+      "po_id": "PO-1310",
+      "vendor_name": "TechParts Inc",
+      "description": "Replacement circuit boards (part #4471)",
+      "amount": 5100.0,
+      "currency": "USD",
+      "issued": "2026-09-28",
+      "status": "open"
+     },
+     "score": 0,
+     "why": [],
+     "ref_exact": false,
+     "diff_pct": 82.54901960784314,
+     "amount": 890.0
+    },
+    {
+     "po": {
+      "po_id": "PO-1402",
+      "vendor_name": "Metro Facilities Corp",
+      "description": "Facility maintenance contract \u2014 3-month split billing (issued 3 POs)",
+      "amount": 4000.0,
+      "currency": "USD",
+      "issued": "2026-10-01",
+      "status": "open"
+     },
+     "score": 0,
+     "why": [],
+     "ref_exact": false,
+     "diff_pct": 77.75,
+     "amount": 890.0
+    }
+   ],
+   "explanation": "Refused to pay: the same invoice number from the same vendor already exists in the processed-invoice register in a paid/approved state. A duplicate is the single most common AP fraud pattern and the cheapest one to catch \u2014 so this rule is deliberately hard: it rejects outright instead of routing to review.",
+   "extracted": {
+    "text_source": "text-layer",
+    "ocr_seconds": 0.01,
+    "confidence": 0.9,
+    "pages": 1,
+    "invoice_number": "INV-2026-0142",
+    "invoice_date": "2026-10-21",
+    "due_date": "2026-11-20",
+    "vendor_name": "GLOBAL OFFICE SUPPLY",
+    "vendor_tax_id": "11-2233445",
+    "po_refs": [
+     "PO-1205"
+    ],
+    "currency": "USD",
+    "line_items": [
+     {
+      "name": "Warehouse boxes, corrugated 20x12x10 (pallet)",
+      "qty": "1",
+      "unit_price": 540.0,
+      "amount": 540.0,
+      "raw": "Warehouse boxes, corrugated 20x12x10 (pallet)1 $540.00 $540.00",
+      "line_no": 15
+     },
+     {
+      "name": "Stretch wrap rolls, 18\"",
+      "qty": "8",
+      "unit_price": 24.5,
+      "amount": 196.0,
+      "raw": "Stretch wrap rolls, 18\" 8 $24.50 $196.00",
+      "line_no": 16
+     },
+     {
+      "name": "Safety gloves, nitrile L (case of 200)",
+      "qty": "1",
+      "unit_price": 120.0,
+      "amount": 120.0,
+      "raw": "Safety gloves, nitrile L (case of 200) 1 $120.00 $120.00",
+      "line_no": 17
+     },
+     {
+      "name": "Shrink-sealer refills",
+      "qty": "1",
+      "unit_price": 34.0,
+      "amount": 34.0,
+      "raw": "Shrink-sealer refills 1 $34.00 $34.00",
+      "line_no": 18
+     }
+    ],
+    "total_from_lines": 890.0,
+    "total_printed": 890.0,
+    "subtotal": 890.0,
+    "tax_amount": 11.0,
+    "evidence": {
+     "po_refs": [
+      "PO Ref: PO-1205"
+     ],
+     "tax_id": "Tax ID: 11-2233445",
+     "invoice_number": "No: INV-2026-0142",
+     "invoice_date": "Date: 10/21/2026",
+     "due_date": "Due: 11/20/2026",
+     "total_from_lines": "sum of 4 line items",
+     "total_printed": "Total Due $890.00",
+     "subtotal": "Subtotal $890.00",
+     "tax_amount": "PO Box 447, Columbus, OH 43216 \u00b7 www.globalofficesupply.com \u00b7 Tax ID: 11-2233445"
+    }
+   },
+   "split_billing": false,
+   "duplicates": [
+    {
+     "invoice_number": "INV-2026-0142",
+     "vendor_name": "Global Office Supply",
+     "po_id": "PO-1205",
+     "amount": 890.0,
+     "currency": "USD",
+     "issued": "2026-10-21",
+     "status": "paid"
+    }
+   ],
+   "rules_applied": {
+    "amount_tolerance_pct": 2.0,
+    "absolute_tolerance": 5.0,
+    "split_billing_pct": 5.0,
+    "hold_after_seconds": 180,
+    "duplicate_window_days": 365,
+    "require_invoice_number": true,
+    "max_line_item_total_delta_pct": 1.0
+   }
+  }
+ },
+ {
+  "file": "03-split-billing.pdf",
+  "description": "tranche 2 of 3 on a split PO \u2014 should REVIEW (under PO)",
+  "expected": "REVIEW",
+  "run_id": "088d42b79503",
+  "events": [
+   {
+    "stage": "ingest",
+    "type": "stage-start",
+    "name": "Ingest & classify",
+    "detail": "03-split-billing.pdf",
+    "size_kb": 2,
+    "pages": 1
+   },
+   {
+    "stage": "extract",
+    "type": "text-source",
+    "source": "text-layer",
+    "seconds": 0.01,
+    "confidence": 0.9,
+    "chars": 863
+   },
+   {
+    "stage": "ingest",
+    "type": "classify",
+    "kind": "digital",
+    "detail": "machine-readable text layer found \u2014 treat as digital invoice"
+   },
+   {
+    "stage": "fields",
+    "type": "fields",
+    "fields": {
+     "text_source": "text-layer",
+     "ocr_seconds": 0.01,
+     "confidence": 0.9,
+     "pages": 1,
+     "invoice_number": "INV-2026-0231",
+     "invoice_date": "2026-10-27",
+     "due_date": "2026-11-26",
+     "vendor_name": "METRO FACILITIES CORP",
+     "vendor_tax_id": "22-3344556",
+     "po_refs": [
+      "PO-1403"
+     ],
+     "currency": "USD",
+     "line_items": 3,
+     "total_from_lines": 3900.0,
+     "total_printed": 3900.0,
+     "subtotal": 3900.0,
+     "tax_amount": 22.0,
+     "evidence": {
+      "po_refs": [
+       "purchase order PO-1403"
+      ],
+      "tax_id": "Tax ID 22-3344556",
+      "invoice_number": "Invoice No: INV-2026-0231",
+      "invoice_date": "Invoice Date: 10/27/2026",
+      "due_date": "Due: NET 30 \u2014 11/26/2026",
+      "total_from_lines": "sum of 3 line items",
+      "total_printed": "Total Due $3,900.00",
+      "subtotal": "Subtotal $3,900.00",
+      "tax_amount": "2200 Harbor Drive, Cleveland, OH 44114 \u00b7 Tax ID 22-3344556 \u00b7 billing@metrofac.com"
+     }
+    },
+    "notes": [
+     "vendor name inferred via letterhead heuristic (largest text on page 1)",
+     "3 line items extracted; line-item total 3,900.00",
+     "printed total 3,900.00 read from line: \"Total Due $3,900.00\"",
+     "subtotal 3,900.00 + tax 22.00 = 3,922.00 (tax separated)",
+     "printed total matches sum of line items \u2713"
+    ],
+    "warnings": []
+   },
+   {
+    "stage": "quality",
+    "type": "gate",
+    "result": "pass",
+    "detail": "all critical fields present"
+   },
+   {
+    "stage": "matching",
+    "type": "match",
+    "matched_po": "PO-1403",
+    "match_type": "exact-ref",
+    "note": "PO PO-1403 matched by explicit reference on the invoice",
+    "candidates": [
+     {
+      "po_id": "PO-1403",
+      "vendor": "Metro Facilities Corp",
+      "po_amount": 5000.0,
+      "score": 130,
+      "why": [
+       "explicit PO reference \"PO-1403\" on the invoice",
+       "vendor name \"METRO FACILITIES CORP\" matches PO vendor \"Metro Facilities Corp\""
+      ],
+      "diff_pct": 22.0
+     },
+     {
+      "po_id": "PO-1402",
+      "vendor": "Metro Facilities Corp",
+      "po_amount": 4000.0,
+      "score": 30,
+      "why": [
+       "vendor name \"METRO FACILITIES CORP\" matches PO vendor \"Metro Facilities Corp\""
+      ],
+      "diff_pct": 2.5
+     },
+     {
+      "po_id": "PO-1404",
+      "vendor": "Metro Facilities Corp",
+      "po_amount": 4800.0,
+      "score": 30,
+      "why": [
+       "vendor name \"METRO FACILITIES CORP\" matches PO vendor \"Metro Facilities Corp\""
+      ],
+      "diff_pct": 18.75
+     },
+     {
+      "po_id": "PO-1101",
+      "vendor": "Acme Industrial Supply Ltd.",
+      "po_amount": 1234.56,
+      "score": 0,
+      "why": [],
+      "diff_pct": 215.90202177293935
+     },
+     {
+      "po_id": "PO-1204",
+      "vendor": "Global Office Supply",
+      "po_amount": 4320.0,
+      "score": 0,
+      "why": [],
+      "diff_pct": 9.722222222222223
+     }
+    ]
+   },
+   {
+    "stage": "validation",
+    "type": "rules",
+    "rules": {
+     "amount_tolerance_pct": 2.0,
+     "absolute_tolerance": 5.0,
+     "split_billing_pct": 5.0,
+     "hold_after_seconds": 180,
+     "duplicate_window_days": 365,
+     "require_invoice_number": true,
+     "max_line_item_total_delta_pct": 1.0
+    },
+    "duplicates": [],
+    "split_billing": false
+   },
+   {
+    "stage": "decision",
+    "type": "decision",
+    "status": "REVIEW",
+    "reasons": [
+     "UNDER PO \u2014 invoice 3,900.00 is 1,100.00 (22.0%) below PO 5,000.00; could be a partial/split invoice or an amount error \u2014 confirm the billing schedule before payment"
+    ],
+    "issues": [
+     {
+      "code": "UNDER_PO",
+      "severity": "warning",
+      "message": "UNDER PO \u2014 invoice 3,900.00 is 1,100.00 (22.0%) below PO 5,000.00; could be a partial/split invoice or an amount error \u2014 confirm the billing schedule before payment"
+     }
+    ],
+    "explanation": "Requires human triage: UNDER PO \u2014 invoice 3,900.00 is 1,100.00 (22.0%) below PO 5,000.00; could be a partial/split invoice or an amount error \u2014 confirm the billing schedule before payment",
+    "elapsed_s": 0.03
+   }
+  ],
+  "decision": {
+   "status": "REVIEW",
+   "reasons": [
+    "UNDER PO \u2014 invoice 3,900.00 is 1,100.00 (22.0%) below PO 5,000.00; could be a partial/split invoice or an amount error \u2014 confirm the billing schedule before payment"
+   ],
+   "issues": [
+    {
+     "code": "UNDER_PO",
+     "severity": "warning",
+     "message": "UNDER PO \u2014 invoice 3,900.00 is 1,100.00 (22.0%) below PO 5,000.00; could be a partial/split invoice or an amount error \u2014 confirm the billing schedule before payment"
+    }
+   ],
+   "matched_po": {
+    "po_id": "PO-1403",
+    "vendor_name": "Metro Facilities Corp",
+    "description": "Facility maintenance contract \u2014 3-month split billing (issued 3 POs)",
+    "amount": 5000.0,
+    "currency": "USD",
+    "issued": "2026-10-01",
+    "status": "open"
+   },
+   "match_type": "exact-ref",
+   "amount_to_pay": 3900.0,
+   "po_candidates": [
+    {
+     "po": {
+      "po_id": "PO-1403",
+      "vendor_name": "Metro Facilities Corp",
+      "description": "Facility maintenance contract \u2014 3-month split billing (issued 3 POs)",
+      "amount": 5000.0,
+      "currency": "USD",
+      "issued": "2026-10-01",
+      "status": "open"
+     },
+     "score": 130,
+     "why": [
+      "explicit PO reference \"PO-1403\" on the invoice",
+      "vendor name \"METRO FACILITIES CORP\" matches PO vendor \"Metro Facilities Corp\""
+     ],
+     "ref_exact": true,
+     "diff_pct": 22.0,
+     "amount": 3900.0
+    },
+    {
+     "po": {
+      "po_id": "PO-1402",
+      "vendor_name": "Metro Facilities Corp",
+      "description": "Facility maintenance contract \u2014 3-month split billing (issued 3 POs)",
+      "amount": 4000.0,
+      "currency": "USD",
+      "issued": "2026-10-01",
+      "status": "open"
+     },
+     "score": 30,
+     "why": [
+      "vendor name \"METRO FACILITIES CORP\" matches PO vendor \"Metro Facilities Corp\""
+     ],
+     "ref_exact": false,
+     "diff_pct": 2.5,
+     "amount": 3900.0
+    },
+    {
+     "po": {
+      "po_id": "PO-1404",
+      "vendor_name": "Metro Facilities Corp",
+      "description": "Facility maintenance contract \u2014 3-month split billing (issued 3 POs)",
+      "amount": 4800.0,
+      "currency": "USD",
+      "issued": "2026-10-01",
+      "status": "open"
+     },
+     "score": 30,
+     "why": [
+      "vendor name \"METRO FACILITIES CORP\" matches PO vendor \"Metro Facilities Corp\""
+     ],
+     "ref_exact": false,
+     "diff_pct": 18.75,
+     "amount": 3900.0
+    },
+    {
+     "po": {
+      "po_id": "PO-1101",
+      "vendor_name": "Acme Industrial Supply Ltd.",
+      "description": "Steel brackets & fasteners \u2014 Production line 3",
+      "amount": 1234.56,
+      "currency": "USD",
+      "issued": "2026-10-01",
+      "status": "open"
+     },
+     "score": 0,
+     "why": [],
+     "ref_exact": false,
+     "diff_pct": 215.90202177293935,
+     "amount": 3900.0
+    },
+    {
+     "po": {
+      "po_id": "PO-1204",
+      "vendor_name": "Global Office Supply",
+      "description": "Office supplies \u2014 Q4 replenishment",
+      "amount": 4320.0,
+      "currency": "USD",
+      "issued": "2026-10-15",
+      "status": "open"
+     },
+     "score": 0,
+     "why": [],
+     "ref_exact": false,
+     "diff_pct": 9.722222222222223,
+     "amount": 3900.0
+    }
+   ],
+   "explanation": "Requires human triage: UNDER PO \u2014 invoice 3,900.00 is 1,100.00 (22.0%) below PO 5,000.00; could be a partial/split invoice or an amount error \u2014 confirm the billing schedule before payment",
+   "extracted": {
+    "text_source": "text-layer",
+    "ocr_seconds": 0.01,
+    "confidence": 0.9,
+    "pages": 1,
+    "invoice_number": "INV-2026-0231",
+    "invoice_date": "2026-10-27",
+    "due_date": "2026-11-26",
+    "vendor_name": "METRO FACILITIES CORP",
+    "vendor_tax_id": "22-3344556",
+    "po_refs": [
+     "PO-1403"
+    ],
+    "currency": "USD",
+    "line_items": [
+     {
+      "name": "Maintenance \u2014 October cycle (parts & labor)",
+      "qty": "1",
+      "unit_price": 2450.0,
+      "amount": 2450.0,
+      "raw": "Maintenance \u2014 October cycle (parts & labor) 1 $2,450.00 $2,450.00",
+      "line_no": 14
+     },
+     {
+      "name": "HVAC filter replacement, 12 units",
+      "qty": "12",
+      "unit_price": 79.17,
+      "amount": 950.0,
+      "raw": "HVAC filter replacement, 12 units 12 $79.17 $950.00",
+      "line_no": 15
+     },
+     {
+      "name": "Emergency call-out \u2014 chiller #2",
+      "qty": "1",
+      "unit_price": 500.0,
+      "amount": 500.0,
+      "raw": "Emergency call-out \u2014 chiller #2 1 $500.00 $500.00",
+      "line_no": 16
+     }
+    ],
+    "total_from_lines": 3900.0,
+    "total_printed": 3900.0,
+    "subtotal": 3900.0,
+    "tax_amount": 22.0,
+    "evidence": {
+     "po_refs": [
+      "purchase order PO-1403"
+     ],
+     "tax_id": "Tax ID 22-3344556",
+     "invoice_number": "Invoice No: INV-2026-0231",
+     "invoice_date": "Invoice Date: 10/27/2026",
+     "due_date": "Due: NET 30 \u2014 11/26/2026",
+     "total_from_lines": "sum of 3 line items",
+     "total_printed": "Total Due $3,900.00",
+     "subtotal": "Subtotal $3,900.00",
+     "tax_amount": "2200 Harbor Drive, Cleveland, OH 44114 \u00b7 Tax ID 22-3344556 \u00b7 billing@metrofac.com"
+    }
+   },
+   "split_billing": false,
+   "duplicates": [],
+   "rules_applied": {
+    "amount_tolerance_pct": 2.0,
+    "absolute_tolerance": 5.0,
+    "split_billing_pct": 5.0,
+    "hold_after_seconds": 180,
+    "duplicate_window_days": 365,
+    "require_invoice_number": true,
+    "max_line_item_total_delta_pct": 1.0
+   }
+  }
+ },
+ {
+  "file": "04-missing-fields.pdf",
+  "description": "no invoice no / date, PO in narrative \u2014 should REVIEW (missing fields)",
+  "expected": "REVIEW",
+  "run_id": "9fce83aceb86",
+  "events": [
+   {
+    "stage": "ingest",
+    "type": "stage-start",
+    "name": "Ingest & classify",
+    "detail": "04-missing-fields.pdf",
+    "size_kb": 2,
+    "pages": 1
+   },
+   {
+    "stage": "extract",
+    "type": "text-source",
+    "source": "text-layer",
+    "seconds": 0.01,
+    "confidence": 0.9,
+    "chars": 585
+   },
+   {
+    "stage": "ingest",
+    "type": "classify",
+    "kind": "digital",
+    "detail": "machine-readable text layer found \u2014 treat as digital invoice"
+   },
+   {
+    "stage": "fields",
+    "type": "fields",
+    "fields": {
+     "text_source": "text-layer",
+     "ocr_seconds": 0.01,
+     "confidence": 0.9,
+     "pages": 1,
+     "invoice_number": null,
+     "invoice_date": null,
+     "due_date": null,
+     "vendor_name": "TECHPARTS INC",
+     "vendor_tax_id": "44-5566778",
+     "po_refs": [
+      "PO-1310"
+     ],
+     "currency": "USD",
+     "line_items": 2,
+     "total_from_lines": 5100.0,
+     "total_printed": 5100.0,
+     "subtotal": 5100.0,
+     "tax_amount": 44.0,
+     "evidence": {
+      "po_refs": [
+       "purchase order PO-1310"
+      ],
+      "tax_id": "Tax ID: 44-5566778",
+      "invoice_date": "Thank you for your business. Payment terms: NET 30 from invoice date.",
+      "total_from_lines": "sum of 2 line items",
+      "total_printed": "Total Due $5,100.00",
+      "subtotal": "Subtotal $5,100.00",
+      "tax_amount": "Tax ID: 44-5566778"
+     }
+    },
+    "notes": [
+     "vendor name inferred via letterhead heuristic (largest text on page 1)",
+     "2 line items extracted; line-item total 5,100.00",
+     "printed total 5,100.00 read from line: \"Total Due $5,100.00\"",
+     "subtotal 5,100.00 + tax 44.00 = 5,144.00 (tax separated)",
+     "printed total matches sum of line items \u2713"
+    ],
+    "warnings": [
+     "No invoice number found \u2014 duplicate detection now limited to vendor+total",
+     "missing critical field(s): invoice_number, invoice_date"
+    ]
+   },
+   {
+    "stage": "quality",
+    "type": "gate",
+    "result": "degraded",
+    "missing": [
+     "invoice_number",
+     "invoice_date"
+    ],
+    "detail": "2 critical field(s) missing \u2014 continuing in degraded mode"
+   },
+   {
+    "stage": "matching",
+    "type": "match",
+    "matched_po": "PO-1310",
+    "match_type": "exact-ref",
+    "note": "PO PO-1310 matched by explicit reference on the invoice",
+    "candidates": [
+     {
+      "po_id": "PO-1310",
+      "vendor": "TechParts Inc",
+      "po_amount": 5100.0,
+      "score": 155,
+      "why": [
+       "explicit PO reference \"PO-1310\" on the invoice",
+       "vendor name \"TECHPARTS INC\" matches PO vendor \"TechParts Inc\"",
+       "invoice total 5,100.00 within 2.0% of PO 5,100.00"
+      ],
+      "diff_pct": 0.0
+     },
+     {
+      "po_id": "PO-1403",
+      "vendor": "Metro Facilities Corp",
+      "po_amount": 5000.0,
+      "score": 25,
+      "why": [
+       "invoice total 5,100.00 within 2.0% of PO 5,000.00"
+      ],
+      "diff_pct": 2.0
+     },
+     {
+      "po_id": "PO-1101",
+      "vendor": "Acme Industrial Supply Ltd.",
+      "po_amount": 1234.56,
+      "score": 0,
+      "why": [],
+      "diff_pct": 313.1026438569207
+     },
+     {
+      "po_id": "PO-1204",
+      "vendor": "Global Office Supply",
+      "po_amount": 4320.0,
+      "score": 0,
+      "why": [],
+      "diff_pct": 18.055555555555554
+     },
+     {
+      "po_id": "PO-1205",
+      "vendor": "Global Office Supply",
+      "po_amount": 890.0,
+      "score": 0,
+      "why": [],
+      "diff_pct": 473.03370786516854
+     }
+    ]
+   },
+   {
+    "stage": "validation",
+    "type": "rules",
+    "rules": {
+     "amount_tolerance_pct": 2.0,
+     "absolute_tolerance": 5.0,
+     "split_billing_pct": 5.0,
+     "hold_after_seconds": 180,
+     "duplicate_window_days": 365,
+     "require_invoice_number": true,
+     "max_line_item_total_delta_pct": 1.0
+    },
+    "duplicates": [],
+    "split_billing": false
+   },
+   {
+    "stage": "decision",
+    "type": "decision",
+    "status": "REVIEW",
+    "reasons": [
+     "AMOUNT OK \u2014 invoice 5,100.00 vs PO 5,100.00 (diff 0.00%, tolerance \u00b12.0%)",
+     "MISSING FIELDS \u2014 no invoice number on the document",
+     "MISSING FIELDS \u2014 no invoice date"
+    ],
+    "issues": [
+     {
+      "code": "MISSING_INVOICE_NO",
+      "severity": "blocker",
+      "message": "No invoice number \u2014 duplicate detection is weakened; request a corrected invoice or log manually"
+     },
+     {
+      "code": "MISSING_DATE",
+      "severity": "warning",
+      "message": "No invoice date found"
+     }
+    ],
+    "explanation": "Requires human triage: No invoice number \u2014 duplicate detection is weakened; request a corrected invoice or log manually | No invoice date found",
+    "elapsed_s": 0.02
+   }
+  ],
+  "decision": {
+   "status": "REVIEW",
+   "reasons": [
+    "AMOUNT OK \u2014 invoice 5,100.00 vs PO 5,100.00 (diff 0.00%, tolerance \u00b12.0%)",
+    "MISSING FIELDS \u2014 no invoice number on the document",
+    "MISSING FIELDS \u2014 no invoice date"
+   ],
+   "issues": [
+    {
+     "code": "MISSING_INVOICE_NO",
+     "severity": "blocker",
+     "message": "No invoice number \u2014 duplicate detection is weakened; request a corrected invoice or log manually"
+    },
+    {
+     "code": "MISSING_DATE",
+     "severity": "warning",
+     "message": "No invoice date found"
+    }
+   ],
+   "matched_po": {
+    "po_id": "PO-1310",
+    "vendor_name": "TechParts Inc",
+    "description": "Replacement circuit boards (part #4471)",
+    "amount": 5100.0,
+    "currency": "USD",
+    "issued": "2026-09-28",
+    "status": "open"
+   },
+   "match_type": "exact-ref",
+   "amount_to_pay": 5100.0,
+   "po_candidates": [
+    {
+     "po": {
+      "po_id": "PO-1310",
+      "vendor_name": "TechParts Inc",
+      "description": "Replacement circuit boards (part #4471)",
+      "amount": 5100.0,
+      "currency": "USD",
+      "issued": "2026-09-28",
+      "status": "open"
+     },
+     "score": 155,
+     "why": [
+      "explicit PO reference \"PO-1310\" on the invoice",
+      "vendor name \"TECHPARTS INC\" matches PO vendor \"TechParts Inc\"",
+      "invoice total 5,100.00 within 2.0% of PO 5,100.00"
+     ],
+     "ref_exact": true,
+     "diff_pct": 0.0,
+     "amount": 5100.0
+    },
+    {
+     "po": {
+      "po_id": "PO-1403",
+      "vendor_name": "Metro Facilities Corp",
+      "description": "Facility maintenance contract \u2014 3-month split billing (issued 3 POs)",
+      "amount": 5000.0,
+      "currency": "USD",
+      "issued": "2026-10-01",
+      "status": "open"
+     },
+     "score": 25,
+     "why": [
+      "invoice total 5,100.00 within 2.0% of PO 5,000.00"
+     ],
+     "ref_exact": false,
+     "diff_pct": 2.0,
+     "amount": 5100.0
+    },
+    {
+     "po": {
+      "po_id": "PO-1101",
+      "vendor_name": "Acme Industrial Supply Ltd.",
+      "description": "Steel brackets & fasteners \u2014 Production line 3",
+      "amount": 1234.56,
+      "currency": "USD",
+      "issued": "2026-10-01",
+      "status": "open"
+     },
+     "score": 0,
+     "why": [],
+     "ref_exact": false,
+     "diff_pct": 313.1026438569207,
+     "amount": 5100.0
+    },
+    {
+     "po": {
+      "po_id": "PO-1204",
+      "vendor_name": "Global Office Supply",
+      "description": "Office supplies \u2014 Q4 replenishment",
+      "amount": 4320.0,
+      "currency": "USD",
+      "issued": "2026-10-15",
+      "status": "open"
+     },
+     "score": 0,
+     "why": [],
+     "ref_exact": false,
+     "diff_pct": 18.055555555555554,
+     "amount": 5100.0
+    },
+    {
+     "po": {
+      "po_id": "PO-1205",
+      "vendor_name": "Global Office Supply",
+      "description": "Warehouse consumables",
+      "amount": 890.0,
+      "currency": "USD",
+      "issued": "2026-10-20",
+      "status": "open"
+     },
+     "score": 0,
+     "why": [],
+     "ref_exact": false,
+     "diff_pct": 473.03370786516854,
+     "amount": 5100.0
+    }
+   ],
+   "explanation": "Requires human triage: No invoice number \u2014 duplicate detection is weakened; request a corrected invoice or log manually | No invoice date found",
+   "extracted": {
+    "text_source": "text-layer",
+    "ocr_seconds": 0.01,
+    "confidence": 0.9,
+    "pages": 1,
+    "invoice_number": null,
+    "invoice_date": null,
+    "due_date": null,
+    "vendor_name": "TECHPARTS INC",
+    "vendor_tax_id": "44-5566778",
+    "po_refs": [
+     "PO-1310"
+    ],
+    "currency": "USD",
+    "line_items": [
+     {
+      "name": "Circuit board assembly #4471",
+      "qty": "40",
+      "unit_price": 118.75,
+      "amount": 4750.0,
+      "raw": "Circuit board assembly #4471 40 $118.75 $4,750.00",
+      "line_no": 12
+     },
+     {
+      "name": "Calibration & test certification",
+      "qty": "1",
+      "unit_price": 350.0,
+      "amount": 350.0,
+      "raw": "Calibration & test certification 1 $350.00 $350.00",
+      "line_no": 13
+     }
+    ],
+    "total_from_lines": 5100.0,
+    "total_printed": 5100.0,
+    "subtotal": 5100.0,
+    "tax_amount": 44.0,
+    "evidence": {
+     "po_refs": [
+      "purchase order PO-1310"
+     ],
+     "tax_id": "Tax ID: 44-5566778",
+     "invoice_date": "Thank you for your business. Payment terms: NET 30 from invoice date.",
+     "total_from_lines": "sum of 2 line items",
+     "total_printed": "Total Due $5,100.00",
+     "subtotal": "Subtotal $5,100.00",
+     "tax_amount": "Tax ID: 44-5566778"
+    }
+   },
+   "split_billing": false,
+   "duplicates": [],
+   "rules_applied": {
+    "amount_tolerance_pct": 2.0,
+    "absolute_tolerance": 5.0,
+    "split_billing_pct": 5.0,
+    "hold_after_seconds": 180,
+    "duplicate_window_days": 365,
+    "require_invoice_number": true,
+    "max_line_item_total_delta_pct": 1.0
+   }
+  }
+ },
+ {
+  "file": "05-scanned.pdf",
+  "description": "image-only scan (no text layer) \u2014 OCR path, should PAY via OCR",
+  "expected": "PAY",
+  "run_id": "c059085a8c37",
+  "events": [
+   {
+    "stage": "ingest",
+    "type": "stage-start",
+    "name": "Ingest & classify",
+    "detail": "05-scanned.pdf",
+    "size_kb": 144,
+    "pages": 1
+   },
+   {
+    "stage": "extract",
+    "type": "text-source",
+    "source": "ocr-tesseract",
+    "seconds": 1.25,
+    "confidence": 0.6,
+    "chars": 678
+   },
+   {
+    "stage": "ingest",
+    "type": "classify",
+    "kind": "scanned-or-image",
+    "detail": "no usable text layer \u2014 scanned/image invoice; OCR fallback path"
+   },
+   {
+    "stage": "fields",
+    "type": "fields",
+    "fields": {
+     "text_source": "ocr-tesseract",
+     "ocr_seconds": 1.25,
+     "confidence": 0.6,
+     "pages": 1,
+     "invoice_number": "INV-2026-0209",
+     "invoice_date": "2026-10-05",
+     "due_date": "2026-11-04",
+     "vendor_name": "METRO FACILITIES CORP",
+     "vendor_tax_id": "22-3344556",
+     "po_refs": [
+      "PO-1402"
+     ],
+     "currency": "USD",
+     "line_items": 2,
+     "total_from_lines": 4000.0,
+     "total_printed": 4000.0,
+     "subtotal": 4000.0,
+     "tax_amount": 22.0,
+     "evidence": {
+      "po_refs": [
+       "PO Reference: PO-1402"
+      ],
+      "tax_id": "Tax ID 22-3344556",
+      "invoice_number": "Invoice No: INV-2026-0209",
+      "invoice_date": "Invoice Date: 10/05/2026",
+      "due_date": "Due: NET 30 \u2014 11/04/2026",
+      "total_from_lines": "sum of 2 line items",
+      "total_printed": "TOTAL DUE: $4,000.00 - Tranches 2 and 3 to follow",
+      "subtotal": "Subtotal $4,000.00",
+      "tax_amount": "2200 Harbor Drive, Cleveland, OH 44114 - Tax ID 22-3344556"
+     }
+    },
+    "notes": [
+     "vendor name inferred via OCR top-line heuristic (scan read top-to-bottom); lower trust",
+     "2 line items extracted; line-item total 4,000.00",
+     "printed total 4,000.00 read from line: \"TOTAL DUE: $4,000.00 - Tranches 2 and 3 to follow\"",
+     "subtotal 4,000.00 + tax 22.00 = 4,022.00 (tax separated)",
+     "printed total matches sum of line items \u2713"
+    ],
+    "warnings": []
+   },
+   {
+    "stage": "quality",
+    "type": "gate",
+    "result": "pass",
+    "detail": "all critical fields present"
+   },
+   {
+    "stage": "quality",
+    "type": "ocr-confidence",
+    "result": "degraded",
+    "detail": "fields came from OCR (ocr-tesseract); confidence lowered to 0.6"
+   },
+   {
+    "stage": "matching",
+    "type": "match",
+    "matched_po": "PO-1402",
+    "match_type": "exact-ref",
+    "note": "PO PO-1402 matched by explicit reference on the invoice",
+    "candidates": [
+     {
+      "po_id": "PO-1402",
+      "vendor": "Metro Facilities Corp",
+      "po_amount": 4000.0,
+      "score": 155,
+      "why": [
+       "explicit PO reference \"PO-1402\" on the invoice",
+       "vendor name \"METRO FACILITIES CORP\" matches PO vendor \"Metro Facilities Corp\"",
+       "invoice total 4,000.00 within 2.0% of PO 4,000.00"
+      ],
+      "diff_pct": 0.0
+     },
+     {
+      "po_id": "PO-1403",
+      "vendor": "Metro Facilities Corp",
+      "po_amount": 5000.0,
+      "score": 30,
+      "why": [
+       "vendor name \"METRO FACILITIES CORP\" matches PO vendor \"Metro Facilities Corp\""
+      ],
+      "diff_pct": 20.0
+     },
+     {
+      "po_id": "PO-1404",
+      "vendor": "Metro Facilities Corp",
+      "po_amount": 4800.0,
+      "score": 30,
+      "why": [
+       "vendor name \"METRO FACILITIES CORP\" matches PO vendor \"Metro Facilities Corp\""
+      ],
+      "diff_pct": 16.666666666666664
+     },
+     {
+      "po_id": "PO-1101",
+      "vendor": "Acme Industrial Supply Ltd.",
+      "po_amount": 1234.56,
+      "score": 0,
+      "why": [],
+      "diff_pct": 224.00207361327116
+     },
+     {
+      "po_id": "PO-1204",
+      "vendor": "Global Office Supply",
+      "po_amount": 4320.0,
+      "score": 0,
+      "why": [],
+      "diff_pct": 7.4074074074074066
+     }
+    ]
+   },
+   {
+    "stage": "validation",
+    "type": "rules",
+    "rules": {
+     "amount_tolerance_pct": 2.0,
+     "absolute_tolerance": 5.0,
+     "split_billing_pct": 5.0,
+     "hold_after_seconds": 180,
+     "duplicate_window_days": 365,
+     "require_invoice_number": true,
+     "max_line_item_total_delta_pct": 1.0
+    },
+    "duplicates": [],
+    "split_billing": false
+   },
+   {
+    "stage": "decision",
+    "type": "decision",
+    "status": "PAY",
+    "reasons": [
+     "AMOUNT OK \u2014 invoice 4,000.00 vs PO 4,000.00 (diff 0.00%, tolerance \u00b12.0%)"
+    ],
+    "issues": [],
+    "explanation": "Invoice INV-2026-0209 from METRO FACILITIES CORP, 4,000.00 USD. Matched PO PO-1402 (exact-ref). Amount within tolerance, vendor approved, no duplicates, no missing critical fields. Safe to queue for payment.",
+    "elapsed_s": 1.25
+   }
+  ],
+  "decision": {
+   "status": "PAY",
+   "reasons": [
+    "AMOUNT OK \u2014 invoice 4,000.00 vs PO 4,000.00 (diff 0.00%, tolerance \u00b12.0%)"
+   ],
+   "issues": [],
+   "matched_po": {
+    "po_id": "PO-1402",
+    "vendor_name": "Metro Facilities Corp",
+    "description": "Facility maintenance contract \u2014 3-month split billing (issued 3 POs)",
+    "amount": 4000.0,
+    "currency": "USD",
+    "issued": "2026-10-01",
+    "status": "open"
+   },
+   "match_type": "exact-ref",
+   "amount_to_pay": 4000.0,
+   "po_candidates": [
+    {
+     "po": {
+      "po_id": "PO-1402",
+      "vendor_name": "Metro Facilities Corp",
+      "description": "Facility maintenance contract \u2014 3-month split billing (issued 3 POs)",
+      "amount": 4000.0,
+      "currency": "USD",
+      "issued": "2026-10-01",
+      "status": "open"
+     },
+     "score": 155,
+     "why": [
+      "explicit PO reference \"PO-1402\" on the invoice",
+      "vendor name \"METRO FACILITIES CORP\" matches PO vendor \"Metro Facilities Corp\"",
+      "invoice total 4,000.00 within 2.0% of PO 4,000.00"
+     ],
+     "ref_exact": true,
+     "diff_pct": 0.0,
+     "amount": 4000.0
+    },
+    {
+     "po": {
+      "po_id": "PO-1403",
+      "vendor_name": "Metro Facilities Corp",
+      "description": "Facility maintenance contract \u2014 3-month split billing (issued 3 POs)",
+      "amount": 5000.0,
+      "currency": "USD",
+      "issued": "2026-10-01",
+      "status": "open"
+     },
+     "score": 30,
+     "why": [
+      "vendor name \"METRO FACILITIES CORP\" matches PO vendor \"Metro Facilities Corp\""
+     ],
+     "ref_exact": false,
+     "diff_pct": 20.0,
+     "amount": 4000.0
+    },
+    {
+     "po": {
+      "po_id": "PO-1404",
+      "vendor_name": "Metro Facilities Corp",
+      "description": "Facility maintenance contract \u2014 3-month split billing (issued 3 POs)",
+      "amount": 4800.0,
+      "currency": "USD",
+      "issued": "2026-10-01",
+      "status": "open"
+     },
+     "score": 30,
+     "why": [
+      "vendor name \"METRO FACILITIES CORP\" matches PO vendor \"Metro Facilities Corp\""
+     ],
+     "ref_exact": false,
+     "diff_pct": 16.666666666666664,
+     "amount": 4000.0
+    },
+    {
+     "po": {
+      "po_id": "PO-1101",
+      "vendor_name": "Acme Industrial Supply Ltd.",
+      "description": "Steel brackets & fasteners \u2014 Production line 3",
+      "amount": 1234.56,
+      "currency": "USD",
+      "issued": "2026-10-01",
+      "status": "open"
+     },
+     "score": 0,
+     "why": [],
+     "ref_exact": false,
+     "diff_pct": 224.00207361327116,
+     "amount": 4000.0
+    },
+    {
+     "po": {
+      "po_id": "PO-1204",
+      "vendor_name": "Global Office Supply",
+      "description": "Office supplies \u2014 Q4 replenishment",
+      "amount": 4320.0,
+      "currency": "USD",
+      "issued": "2026-10-15",
+      "status": "open"
+     },
+     "score": 0,
+     "why": [],
+     "ref_exact": false,
+     "diff_pct": 7.4074074074074066,
+     "amount": 4000.0
+    }
+   ],
+   "explanation": "Invoice INV-2026-0209 from METRO FACILITIES CORP, 4,000.00 USD. Matched PO PO-1402 (exact-ref). Amount within tolerance, vendor approved, no duplicates, no missing critical fields. Safe to queue for payment.",
+   "extracted": {
+    "text_source": "ocr-tesseract",
+    "ocr_seconds": 1.25,
+    "confidence": 0.6,
+    "pages": 1,
+    "invoice_number": "INV-2026-0209",
+    "invoice_date": "2026-10-05",
+    "due_date": "2026-11-04",
+    "vendor_name": "METRO FACILITIES CORP",
+    "vendor_tax_id": "22-3344556",
+    "po_refs": [
+     "PO-1402"
+    ],
+    "currency": "USD",
+    "line_items": [
+     {
+      "name": "Maintenance \u2014 September cycle (labor)",
+      "qty": "1",
+      "unit_price": 2800.0,
+      "amount": 2800.0,
+      "raw": "Maintenance \u2014 September cycle (labor) 1 $2,800.00 $2,800.00",
+      "line_no": 12
+     },
+     {
+      "name": "Roof membrane repair, east wing",
+      "qty": "1",
+      "unit_price": 1200.0,
+      "amount": 1200.0,
+      "raw": "Roof membrane repair, east wing 1 $1,200.00 $1,200.00",
+      "line_no": 13
+     }
+    ],
+    "total_from_lines": 4000.0,
+    "total_printed": 4000.0,
+    "subtotal": 4000.0,
+    "tax_amount": 22.0,
+    "evidence": {
+     "po_refs": [
+      "PO Reference: PO-1402"
+     ],
+     "tax_id": "Tax ID 22-3344556",
+     "invoice_number": "Invoice No: INV-2026-0209",
+     "invoice_date": "Invoice Date: 10/05/2026",
+     "due_date": "Due: NET 30 \u2014 11/04/2026",
+     "total_from_lines": "sum of 2 line items",
+     "total_printed": "TOTAL DUE: $4,000.00 - Tranches 2 and 3 to follow",
+     "subtotal": "Subtotal $4,000.00",
+     "tax_amount": "2200 Harbor Drive, Cleveland, OH 44114 - Tax ID 22-3344556"
+    }
+   },
+   "split_billing": false,
+   "duplicates": [],
+   "rules_applied": {
+    "amount_tolerance_pct": 2.0,
+    "absolute_tolerance": 5.0,
+    "split_billing_pct": 5.0,
+    "hold_after_seconds": 180,
+    "duplicate_window_days": 365,
+    "require_invoice_number": true,
+    "max_line_item_total_delta_pct": 1.0
+   }
+  }
+ }
+]

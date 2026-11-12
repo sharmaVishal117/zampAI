@@ -1,0 +1,70 @@
+{
+  "POS": [
+    {
+      "po_id": "PO-1101",
+      "vendor_name": "Acme Industrial Supply Ltd.",
+      "description": "Steel brackets & fasteners — Production line 3",
+      "amount": 1234.56,
+      "currency": "USD",
+      "issued": "2026-10-01",
+      "status": "open"
+    },
+    {
+      "po_id": "PO-1204",
+      "vendor_name": "Global Office Supply",
+      "description": "Office supplies — Q4 replenishment",
+      "amount": 4320.00,
+      "currency": "USD",
+      "issued": "2026-10-15",
+      "status": "open"
+    },
+    {
+      "po_id": "PO-1205",
+      "vendor_name": "Global Office Supply",
+      "description": "Warehouse consumables",
+      "amount": 890.00,
+      "currency": "USD",
+      "issued": "2026-10-20",
+      "status": "open"
+    },
+    {
+      "po_id": "PO-1310",
+      "vendor_name": "TechParts Inc",
+      "description": "Replacement circuit boards (part #4471)",
+      "amount": 5100.00,
+      "currency": "USD",
+      "issued": "2026-09-28",
+      "status": "open"
+    },
+    {
+      "po_id": "PO-1402",
+      "vendor_name": "Metro Facilities Corp",
+      "description": "Facility maintenance contract — 3-month split billing (issued 3 POs)",
+      "amount": 4000.00,
+      "currency": "USD",
+      "issued": "2026-10-01",
+      "status": "open"
+    },
+    {
+      "po_id": "PO-1403",
+      "vendor_name": "Metro Facilities Corp",
+      "description": "Facility maintenance contract — 3-month split billing (issued 3 POs)",
+      "amount": 5000.00,
+      "currency": "USD",
+      "issued": "2026-10-01",
+      "status": "open"
+    },
+    {
+      "po_id": "PO-1404",
+      "vendor_name": "Metro Facilities Corp",
+      "description": "Facility maintenance contract — 3-month split billing (issued 3 POs)",
+      "amount": 4800.00,
+      "currency": "USD",
+      "issued": "2026-10-01",
+      "status": "open"
+    }
+  ],
+  "INVOICE_INDEX": {
+    "INV-2026-0142": {"po_id": "PO-1205", "vendor_name": "Global Office Supply", "amount": 890.0, "currency": "USD", "issued": "2026-10-21", "status": "paid"}
+  }
+}

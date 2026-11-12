@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AP Invoice Processor</title>
+<style>
+:root { color-scheme: light;
+  --bg:#f6f7fb; --panel:#fff; --ink:#1c2333; --muted:#6b7486; --line:#e5e8f0;
+  --pay:#0f8a5f; --pay-bg:#e4f5ee; --review:#b06e00; --review-bg:#fdf3e0;
+  --reject:#c62b2b; --reject-bg:#fbe7e7; --hold:#5b5bd6; --hold-bg:#eceafd;
+  --error:#c62b2b; --accent:#2456d6;
+}
+* { box-sizing: border-box; }
+body { margin:0; background:var(--bg); color:var(--ink);
+  font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+header { background:var(--panel); border-bottom:1px solid var(--line); padding:14px 22px;
+  display:flex; align-items:center; gap:14px; position:sticky; top:0; z-index:5;}
+header h1 { font-size:16px; margin:0; letter-spacing:.2px; }
+header .sub { color:var(--muted); font-size:12px; }
+nav { margin-left:auto; display:flex; gap:6px; align-items:center;}
+nav button { border:1px solid transparent; background:transparent; padding:7px 12px; border-radius:8px;
+  cursor:pointer; font-size:13px; color:var(--ink); }
+nav button.active { background:#eef1fa; border-color:#d8dff5; color:var(--accent); font-weight:600;}
+.chip { font-size:11px; padding:3px 9px; border-radius:99px; background:#eef1f7; color:var(--muted); }
+.chip.ok { background:var(--pay-bg); color:var(--pay); }
+main { padding:22px; max-width:1200px; margin:0 auto; }
+.panel { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:18px; }
+.grid { display:grid; gap:16px; }
+.cols-4 { grid-template-columns:repeat(4,1fr); }
+.cols-2 { grid-template-columns:1.1fr .9fr; }
+@media (max-width:880px){ .cols-4{grid-template-columns:repeat(2,1fr)} .cols-2{grid-template-columns:1fr} }
+.stat .n { font-size:26px; font-weight:700; }
+.stat .l { color:var(--muted); font-size:12px; margin-top:2px;}
+h2 { font-size:15px; margin:0 0 12px; }
+h3 { font-size:13px; margin:14px 0 6px; color:var(--muted); text-transform:uppercase; letter-spacing:.6px;}
+table { width:100%; border-collapse:collapse; font-size:13px; }
+th { text-align:left; color:var(--muted); font-weight:600; font-size:11px; text-transform:uppercase; letter-spacing:.5px;
+  padding:8px 10px; border-bottom:1px solid var(--line);}
+td { padding:9px 10px; border-bottom:1px solid var(--line); vertical-align:middle;}
+tr.row { cursor:pointer; } tr.row:hover td { background:#f7f8fd; }
+.badge { display:inline-block; font-size:11px; font-weight:700; padding:3px 10px; border-radius:99px; }
+.badge.PAY { background:var(--pay-bg); color:var(--pay); }
+.badge.REVIEW { background:var(--review-bg); color:var(--review); }
+.badge.REJECT { background:var(--reject-bg); color:var(--reject); }
+.badge.HOLD { background:var(--hold-bg); color:var(--hold); }
+.badge.ERROR { background:var(--reject-bg); color:var(--reject); }
+button.run { background:var(--accent); color:#fff; border:none; padding:10px 20px; border-radius:9px;
+  font-size:14px; font-weight:600; cursor:pointer; }
+button.run:disabled { opacity:.5; cursor:wait; }
+select, input[type=file] { padding:8px; border:1px solid var(--line); border-radius:8px; font-size:13px; background:#fff;}
+.pill { display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--muted);}
+/* live run pipeline */
+.pipe { display:flex; gap:8px; flex-wrap:wrap; margin:14px 0; }
+.stage { flex:1; min-width:120px; border:1px solid var(--line); border-radius:10px; padding:10px 12px;
+  background:#fbfbfe; position:relative; transition:all .25s; }
+.stage .num { font-size:11px; color:var(--muted); font-weight:700;}
+.stage .name { font-size:12.5px; font-weight:600; margin-top:2px;}
+.stage.active { border-color:var(--accent); background:#f0f4ff; box-shadow:0 0 0 3px rgba(36,86,214,.12); }
+.stage.active .num { color:var(--accent);}
+.stage.active .spin { display:inline-block; }
+.stage.done { border-color:var(--pay); background:var(--pay-bg);}
+.stage.done .num::before { content:"✓ "; color:var(--pay); font-weight:700;}
+.stage.bad { border-color:var(--reject); background:var(--reject-bg);}
+.spin { width:12px; height:12px; border:2px solid #c9d4f5; border-top-color:var(--accent); border-radius:50%;
+  display:none; animation:rot .7s linear infinite; margin-left:6px; }
+@keyframes rot { to{transform:rotate(360deg)} }
+.log { background:#0f1424; color:#cfd8ea; font:11.5px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace;
+  padding:12px 14px; border-radius:10px; max-height:230px; overflow-y:auto; white-space:pre-wrap; }
+.log .s { color:#7fd1a8; } .log .w { color:#f2c14e; } .log .e { color:#ff8f8f; }
+/* decision banner */
+.decision { border-radius:12px; padding:16px 18px; font-size:14px; display:none; }
+.decision.PAY { background:var(--pay-bg); color:var(--pay); display:block; border:1px solid #bfe3d2;}
+.decision.REVIEW { background:var(--review-bg); color:var(--review); display:block; border:1px solid #f0d9a8;}
+.decision.REJECT { background:var(--reject-bg); color:var(--reject); display:block; border:1px solid #f0bcbc;}
+.decision.HOLD { background:var(--hold-bg); color:var(--hold); display:block; border:1px solid #c9c9f5;}
+.decision .d { font-size:20px; font-weight:800; letter-spacing:.5px;}
+.reasons li { margin:4px 0; }
+.reasons { margin:8px 0 0; padding-left:18px; font-size:12.5px; }
+table.issues td { font-size:12px; padding:6px 8px; }
+code { font-family:ui-monospace, Menlo, monospace; font-size:12px; background:#f0f1f7; padding:1px 5px; border-radius:4px;}
+.kv { display:grid; grid-template-columns:auto 1fr; gap:4px 14px; font-size:12.5px; }
+.kv .k { color:var(--muted); }
+.drawer { position:fixed; top:0; right:-460px; width:440px; height:100vh; background:var(--panel);
+  border-left:1px solid var(--line); box-shadow:-8px 0 30px rgba(20,30,60,.12); transition:right .3s; z-index:20; padding:20px; overflow-y:auto;}
+.drawer.open { right:0; }
+.hidden { display:none !important; }
+.empty { color:var(--muted); font-size:13px; padding:20px; text-align:center; }
+a { color:var(--accent); }
+</style>
+</head>
+<body>
+<header>
+  <h1>AP Invoice Processor</h1>
+  <span class="sub">PS-1 · invoice → reasoned decision</span>
+  <nav>
+    <button id="tab-run" class="active" onclick="show('run')">Process</button>
+    <button id="tab-dash" onclick="show('dash')">Dashboard</button>
+    <span class="chip" id="chip-llm">AI fallback: …</span>
+    <button onclick="resetDb()" title="clear run history + processed-invoice register">Reset data</button>
+  </nav>
+</header>
+
+<main>
+<!-- ============================================================ PROCESS VIEW -->
+<section id="view-run">
+  <div class="panel">
+    <h2>Run the pipeline</h2>
+    <div class="grid" style="grid-template-columns:2fr 1fr; align-items:center">
+      <div>
+        <label style="font-size:12px; color:var(--muted)">Sample invoice</label>
+        <select id="sample" style="width:100%; margin-top:4px"></select>
+        <div id="sample-desc" class="pill" style="margin-top:6px"></div>
+      </div>
+      <div>
+        <label style="font-size:12px; color:var(--muted)">…or upload a PDF</label>
+        <input type="file" id="file" accept="application/pdf" style="width:100%; margin-top:4px">
+      </div>
+    </div>
+    <div style="margin-top:14px; display:flex; gap:10px; align-items:center">
+      <button class="run" id="btn-run" onclick="startRun()">▶ Run pipeline</button>
+      <span class="pill" id="run-meta"></span>
+    </div>
+  </div>
+
+  <div class="panel" style="margin-top:16px" id="pipe-panel">
+    <h2>Live run view</h2>
+    <div class="pipe" id="pipe"></div>
+    <div class="decision" id="decision"></div>
+    <h3>Audit trail</h3>
+    <div class="log" id="log">— no run yet —</div>
+  </div>
+</section>
+
+<!-- ============================================================ DASHBOARD VIEW -->
+<section id="view-dash" class="hidden">
+  <div class="grid cols-4" style="margin-bottom:16px">
+    <div class="panel stat"><div class="n" id="st-total">–</div><div class="l">total runs</div></div>
+    <div class="panel stat"><div class="n" style="color:var(--pay)" id="st-pay">–</div><div class="l">PAY</div></div>
+    <div class="panel stat"><div class="n" style="color:var(--review)" id="st-review">–</div><div class="l">REVIEW</div></div>
+    <div class="panel stat"><div class="n" style="color:var(--reject)" id="st-other">–</div><div class="l">REJECT / HOLD / ERR</div></div>
+  </div>
+  <div class="panel">
+    <h2>Run history</h2>
+    <table>
+      <thead><tr><th>When</th><th>Invoice</th><th>Decision</th><th>PO</th><th>Amount</th><th>Match</th><th></th></tr></thead>
+      <tbody id="runs-body"><tr><td colspan="7" class="empty">No runs yet — process an invoice first.</td></tr></tbody>
+    </table>
+  </div>
+</section>
+</main>
+
+<!-- run detail drawer -->
+<div class="drawer" id="drawer">
+  <div style="display:flex; justify-content:space-between; align-items:center">
+    <h2 style="margin:0">Run detail</h2>
+    <button onclick="closeDrawer()" style="border:none;background:none;font-size:18px;cursor:pointer">✕</button>
+  </div>
+  <div id="drawer-body"></div>
+</div>
+
+<script>
+const STAGES = ["Ingest & classify","Text extraction","Field extraction","Quality gate","PO matching","Rule validation","Decision & persist"];
+const KEY2IDX = {ingest:0, extract:1, fields:2, quality:3, matching:4, validation:5, decision:6, error:6};
+
+// ---------------------------------------------------------------- views
+function show(v){
+  document.getElementById('view-run').classList.toggle('hidden', v!=='run');
+  document.getElementById('view-dash').classList.toggle('hidden', v!=='dash');
+  document.getElementById('tab-run').classList.toggle('active', v==='run');
+  document.getElementById('tab-dash').classList.toggle('active', v==='dash');
+  if(v==='dash') refreshDash();
+}
+
+// ---------------------------------------------------------------- init
+async function init(){
+  const s = await j('/api/samples');
+  const sel = document.getElementById('sample');
+  sel.innerHTML = s.map(o=>`<option value="${o.path}">${o.file} — ${o.expect||o.description}</option>`).join('');
+  sel.onchange = ()=>{
+    const o = s.find(x=>x.path===sel.value);
+    document.getElementById('sample-desc').textContent = o?o.description:'';
+  };
+  sel.onchange();
+  buildPipe();
+  const l = await j('/api/llm');
+  const chip = document.getElementById('chip-llm');
+  chip.textContent = l.configured ? 'AI fallback: ON' : 'AI fallback: rules+OCR only';
+  chip.classList.toggle('ok', !!l.configured);
+  refreshDash();
+  // replay overrides come after
+
+function buildPipe(){
+  document.getElementById('pipe').innerHTML = STAGES.map((s,i)=>
+    `<div class="stage" id="st-${i}"><div class="num">${i+1}<span class="spin"></span></div><div class="name">${s}</div></div>`).join('');
+}
+function setStage(i, cls){
+  document.getElementById('st-'+i).className = 'stage '+cls;
+}
+
+// ---------------------------------------------------------------- run
+async function startRun(){
+  let target = null, label = null;
+  if (document.getElementById('file').files.length){
+    const f = document.getElementById('file').files[0];
+    const fd = new FormData(); fd.append('file', f);
+    const up = await (await fetch('/api/upload',{method:'POST', body:fd})).json();
+    target = up.path; label = f.name;
+  } else {
+    target = document.getElementById('sample').value;
+    label = target.split('/').pop();
+  }
+  document.getElementById('btn-run').disabled = true;
+  document.getElementById('log').textContent = '';
+  document.getElementById('decision').style.display = 'none';
+  document.getElementById('decision').className = 'decision';
+  STAGES.forEach((_,i)=>setStage(i,''));
+  document.getElementById('run-meta').textContent = target;
+
+  const r = await j('/api/run',{method:'POST', body:JSON.stringify({invoice_path:target, label})});
+  if (r.error) return finishRunError('upload/run failed: '+r.error, r.run_id);
+  const evtSource = new EventSource('/api/runs/'+r.run_id+'/live');
+  evtSource.onmessage = (m)=>{
+    const e = JSON.parse(m.data);
+    logEvent(e);
+    if (e.type==='decision'){
+      showDecision(e.status, e.reasons, e.explanation, e.issues);
+      if (e.matched_po) document.getElementById('run-meta').textContent =
+        `${target}  ·  ${e.matched_po}  ·  run ${r.run_id}`;
+    }
+    if (e.type==='error'){ finishRunError(e.detail, r.run_id); }
+  };
+  evtSource.onerror = ()=>{
+    // fall back to persisted record
+    j('/api/runs/'+r.run_id).then(rec=>{
+      (rec.events||[]).forEach(logEvent);
+      const d = rec.decision;
+      showDecision(d.status, d.reasons, d.explanation, d.issues);
+      if (rec.error) finishRunError(rec.error, r.run_id);
+      closeLive(r.run_id);
+    }).catch(()=>finishRunError('could not load run record', r.run_id));
+  };
+  function closeLive(id){ evtSource.close(); document.getElementById('btn-run').disabled=false; }
+  window._closeLive = closeLive;
+  // close when we see closed sentinel via onmessage too:
+  evtSource.addEventListener('message', ()=>{});
+}
+
+function logEvent(e){
+  const log = document.getElementById('log');
+  const idx = KEY2IDX[e.stage] ?? 6;
+  // mark stages complete as we pass their start
+  for (let i=0;i<idx;i++) setStage(i,'done');
+  setStage(idx,'active');
+  if (e.type==='stage-start'){ /* */ }
+  if (e.type==='decision'){ STAGES.forEach((_,i)=>setStage(i, e.status==='PAY'?'done':'active'));
+    if (e.status!=='PAY' && e.status!=='REVIEW') setStage(6, e.status==='REJECT'||e.status==='ERROR'?'bad':'active'); }
+  let line = '';
+  const t = ts();
+  const cls = e.result==='degraded'||e.severity==='blocker' ? 'w' : '';
+  if (e.type==='text-source') line = `[${e.stage}] text source: ${e.source} (${e.chars} chars, ${e.seconds}s, conf ${e.confidence})`;
+  else if (e.type==='classify') line = `[${e.stage}] ${e.kind} invoice — ${e.detail}`;
+  else if (e.type==='fields') line = `[${e.stage}] fields: ${e.fields.invoice_number||'∅'} · vendor ${e.fields.vendor_name||'∅'} · ${e.fields.po_refs.length} PO ref · total ${fmtMoney(e.fields.total_printed)}`;
+  else if (e.type==='gate') line = `[${e.stage}] ${e.result==='pass'?'quality gate: PASS':'quality gate: DEGRADED — missing '+ (e.missing||[]).join(', ')}`;
+  else if (e.type==='ocr-confidence') line = `[${e.stage}] ${e.detail}`;
+  else if (e.type==='total-mismatch') line = `[${e.stage}] ${e.detail}`;
+  else if (e.type==='match') line = `[${e.stage}] ${e.matched_po?('matched '+e.matched_po+' ('+e.match_type+')'):'no PO matched'} — ${e.note}`;
+  else if (e.type==='rules') line = `[${e.stage}] rules: tol ±${e.rules.amount_tolerance_pct}% / ±$${e.rules.absolute_tolerance}, split ${e.rules.split_billing_pct}% · duplicates ${e.duplicates.length}, split-billing ${e.split_billing}`;
+  else if (e.type==='decision') line = `[${e.stage}] DECISION: ${e.status} (${e.elapsed_s}s)`;
+  else if (e.type==='error') line = `[error] ${e.detail}`;
+  else if (e.type==='stage-start') line = `[${e.stage}] starting — ${e.detail} (${e.size_kb} KB, ${e.pages} p)`;
+  else if (e.detail) line = `[${e.stage}] ${e.detail}`;
+  log.innerHTML += `<span class="${cls}">${line}\n</span>`;
+  log.scrollTop = log.scrollHeight;
+}
+
+function showDecision(status, reasons, explanation, issues){
+  const d = document.getElementById('decision');
+  d.className = 'decision ' + status;
+  let html = `<div class="d">${status}</div>`;
+  if (explanation) html += `<div style="margin-top:4px">${explanation}</div>`;
+  if (reasons && reasons.length){
+    html += `<ul class="reasons">${reasons.map(r=>`<li>${r}</li>`).join('')}</ul>`;
+  }
+  if (issues && issues.length){
+    html += `<h3 style="margin:10px 0 4px">Flagged issues</h3><table class="issues"><tr><th>code</th><th>severity</th><th>why</th></tr>` +
+      issues.map(i=>`<tr><td><code>${i.code}</code></td><td>${i.severity}</td><td>${i.message}</td></tr>`).join('') + '</table>';
+  }
+  d.innerHTML = html;
+  refreshDash();
+}
+function finishRunError(msg, run_id){
+  document.getElementById('log').innerHTML += `<span class="e">${msg}\n</span>`;
+  if (window._closeLive) window._closeLive(run_id);
+}
+
+// ---------------------------------------------------------------- dashboard
+async function refreshDash(){ /* no-op in replay; refreshDashFromRecorded populates it */ }
+  const counts = {PAY:0, REVIEW:0, OTHER:0};
+  runs.forEach(r=>{
+    if (r.decision==='PAY') counts.PAY++;
+    else if (r.decision==='REVIEW') counts.REVIEW++;
+    else counts.OTHER++;
+  });
+  document.getElementById('st-total').textContent = runs.length;
+  document.getElementById('st-pay').textContent = counts.PAY;
+  document.getElementById('st-review').textContent = counts.REVIEW;
+  document.getElementById('st-other').textContent = counts.OTHER;
+  const tb = document.getElementById('runs-body');
+  if (!runs.length){ tb.innerHTML = '<tr><td colspan="7" class="empty">No runs yet.</td></tr>'; return; }
+  tb.innerHTML = runs.map(r=>
+    `<tr class="row" onclick="openRun('${r.id}')">
+      <td>${new Date(r.created_at*1000).toLocaleString()}</td>
+      <td>${r.filename}</td>
+      <td><span class="badge ${r.decision}">${r.decision}</span></td>
+      <td>${r.matched_po||'—'}</td>
+      <td>${r.amount!=null?'$'+Number(r.amount).toLocaleString(undefined,{minimumFractionDigits:2}):'—'}</td>
+      <td>${r.match_type||'—'}</td>
+      <td>↗</td></tr>`).join('');
+}
+
+async function openRun(id){
+  const r = await j('/api/runs/'+id);
+  const d = r.decision || {};
+  let html = `
+    <div class="decision ${d.status}" style="display:block"><div class="d">${d.status||'ERROR'}</div>
+      ${d.explanation?`<div>${d.explanation}</div>`:''}</div>
+    <h3>Stages</h3>
+    <div class="kv">` + STAGES.map((s,i)=>`<span class="k">stage ${i+1}</span><span>${s}</span>`).join('') + `</div>
+    <h3>PO candidates scored</h3>`;
+  const cands = (d.po_candidates||[]).map(c=>({
+    po_id: c.po_id || (c.po && c.po.po_id) || '—',
+    vendor: c.vendor || (c.po && c.po.vendor_name) || '—',
+    score: c.score, diff_pct: c.diff_pct
+  }));
+  if (cands.length){
+    html += `<table><tr><th>PO</th><th>vendor</th><th>score</th><th>diff</th></tr>` +
+      cands.map(c=>`<tr><td>${c.po_id}</td><td>${c.vendor}</td><td>${c.score}</td><td>${c.diff_pct!=null?c.diff_pct.toFixed(1)+'%':'—'}</td></tr>`).join('') + '</table>';
+  } else html += '<div class="empty">no candidates</div>';
+  html += `<h3>Extracted fields</h3><div class="kv">`;
+  const e = d.extracted||{};
+  html += `<span class="k">invoice</span><span>${e.invoice_number||'—'}</span>
+    <span class="k">vendor</span><span>${e.vendor_name||'—'}</span>
+    <span class="k">date</span><span>${e.invoice_date||'—'}</span>
+    <span class="k">PO refs</span><span>${(e.po_refs||[]).join(', ')||'—'}</span>
+    <span class="k">total</span><span>${fmtMoney(d.amount_to_pay)}</span>
+    <span class="k">line items</span><span>${(e.line_items||[]).length}</span>`;
+  html += `</div><h3>Reasons</h3><ul class="reasons">${(d.reasons||[]).map(x=>`<li>${x}</li>`).join('')||'<li>—</li>'}</ul>`;
+  html += `<h3>Raw events (${(r.events||[]).length})</h3><div class="log" style="max-height:200px">${(r.events||[]).map(ev=>{
+      const c = ev.result==='degraded'?'w':'';
+      return `<span class="${c}">[${ev.stage}] ${JSON.stringify(Object.fromEntries(Object.entries(ev).filter(([k])=>k!=='stage'))).slice(0,160)}</span>`;
+  }).join('\n')}</div>`;
+  document.getElementById('drawer-body').innerHTML = html;
+  document.getElementById('drawer').classList.add('open');
+}
+function closeDrawer(){ document.getElementById('drawer').classList.remove('open'); }
+
+// ---------------------------------------------------------------- utils
+function j(path, opts){ return Promise.resolve().then(()=>{throw new Error('replay mode: use recorded data');});}
+function fmtMoney(v){ return v==null?'—':'$'+Number(v).toLocaleString(undefined,{minimumFractionDigits:2}); }
+function ts(){ return new Date().toLocaleTimeString(); }
+async function resetDb(){ alert('Replay view — recorded runs only. Run the app locally to reset.'); }
+
+/* ---- REPLAY MODE: driven by recorded pipeline events ---- */
+const RUNS = [{"file": "01-happy-path.pdf", "description": "clean digital invoice, itemised, explicit PO ref \u2014 expect PAY", "expected": "PAY", "run_id": "a4d0e0089a0b", "events": [{"stage": "ingest", "type": "stage-start", "name": "Ingest & classify", "detail": "01-happy-path.pdf", "size_kb": 2, "pages": 1}, {"stage": "extract", "type": "text-source", "source": "text-layer", "seconds": 0.01, "confidence": 0.9, "chars": 695}, {"stage": "ingest", "type": "classify", "kind": "digital", "detail": "machine-readable text layer found \u2014 treat as digital invoice"}, {"stage": "fields", "type": "fields", "fields": {"text_source": "text-layer", "ocr_seconds": 0.01, "confidence": 0.9, "pages": 1, "invoice_number": "INV-2026-0148", "invoice_date": "2026-10-12", "due_date": "2026-11-11", "vendor_name": "ACME INDUSTRIAL SUPPLY LTD.", "vendor_tax_id": "98-7654321", "po_refs": ["PO-1101"], "currency": "USD", "line_items": 3, "total_from_lines": 1234.56, "total_printed": 1234.56, "subtotal": 1234.56, "tax_amount": 98.0, "evidence": {"po_refs": ["PO Number: PO-1101"], "tax_id": "Tax ID: 98-7654321", "invoice_number": "Invoice Number: INV-2026-0148", "invoice_date": "Invoice Date: 2026-10-12", "due_date": "Due Date: 2026-11-11", "total_from_lines": "sum of 3 line items", "total_printed": "Total Due $1,234.56", "subtotal": "Subtotal $1,234.56", "tax_amount": "1800 Commerce Blvd, Dayton, OH 45402 \u00b7 +1 (937) 555-0142 \u00b7 Tax ID: 98-7654321"}}, "notes": ["vendor name inferred via letterhead heuristic (largest text on page 1)", "3 line items extracted; line-item total 1,234.56", "printed total 1,234.56 read from line: \"Total Due $1,234.56\"", "subtotal 1,234.56 + tax 98.00 = 1,332.56 (tax separated)", "printed total matches sum of line items \u2713"], "warnings": []}, {"stage": "quality", "type": "gate", "result": "pass", "detail": "all critical fields present"}, {"stage": "matching", "type": "match", "matched_po": "PO-1101", "match_type": "exact-ref", "note": "PO PO-1101 matched by explicit reference on the invoice", "candidates": [{"po_id": "PO-1101", "vendor": "Acme Industrial Supply Ltd.", "po_amount": 1234.56, "score": 155, "why": ["explicit PO reference \"PO-1101\" on the invoice", "vendor name \"ACME INDUSTRIAL SUPPLY LTD.\" matches PO vendor \"Acme Industrial Supply Ltd.\"", "invoice total 1,234.56 within 2.0% of PO 1,234.56"], "diff_pct": 0.0}, {"po_id": "PO-1204", "vendor": "Global Office Supply", "po_amount": 4320.0, "score": 0, "why": [], "diff_pct": 71.42222222222222}, {"po_id": "PO-1205", "vendor": "Global Office Supply", "po_amount": 890.0, "score": 0, "why": [], "diff_pct": 38.71460674157303}, {"po_id": "PO-1310", "vendor": "TechParts Inc", "po_amount": 5100.0, "score": 0, "why": [], "diff_pct": 75.79294117647059}, {"po_id": "PO-1402", "vendor": "Metro Facilities Corp", "po_amount": 4000.0, "score": 0, "why": [], "diff_pct": 69.136}]}, {"stage": "validation", "type": "rules", "rules": {"amount_tolerance_pct": 2.0, "absolute_tolerance": 5.0, "split_billing_pct": 5.0, "hold_after_seconds": 180, "duplicate_window_days": 365, "require_invoice_number": true, "max_line_item_total_delta_pct": 1.0}, "duplicates": [], "split_billing": false}, {"stage": "decision", "type": "decision", "status": "PAY", "reasons": ["AMOUNT OK \u2014 invoice 1,234.56 vs PO 1,234.56 (diff 0.00%, tolerance \u00b12.0%)"], "issues": [], "explanation": "Invoice INV-2026-0148 from ACME INDUSTRIAL SUPPLY LTD., 1,234.56 USD. Matched PO PO-1101 (exact-ref). Amount within tolerance, vendor approved, no duplicates, no missing critical fields. Safe to queue for payment.", "elapsed_s": 0.03}], "decision": {"status": "PAY", "reasons": ["AMOUNT OK \u2014 invoice 1,234.56 vs PO 1,234.56 (diff 0.00%, tolerance \u00b12.0%)"], "issues": [], "matched_po": {"po_id": "PO-1101", "vendor_name": "Acme Industrial Supply Ltd.", "description": "Steel brackets & fasteners \u2014 Production line 3", "amount": 1234.56, "currency": "USD", "issued": "2026-10-01", "status": "open"}, "match_type": "exact-ref", "amount_to_pay": 1234.56, "po_candidates": [{"po": {"po_id": "PO-1101", "vendor_name": "Acme Industrial Supply Ltd.", "description": "Steel brackets & fasteners \u2014 Production line 3", "amount": 1234.56, "currency": "USD", "issued": "2026-10-01", "status": "open"}, "score": 155, "why": ["explicit PO reference \"PO-1101\" on the invoice", "vendor name \"ACME INDUSTRIAL SUPPLY LTD.\" matches PO vendor \"Acme Industrial Supply Ltd.\"", "invoice total 1,234.56 within 2.0% of PO 1,234.56"], "ref_exact": true, "diff_pct": 0.0, "amount": 1234.56}, {"po": {"po_id": "PO-1204", "vendor_name": "Global Office Supply", "description": "Office supplies \u2014 Q4 replenishment", "amount": 4320.0, "currency": "USD", "issued": "2026-10-15", "status": "open"}, "score": 0, "why": [], "ref_exact": false, "diff_pct": 71.42222222222222, "amount": 1234.56}, {"po": {"po_id": "PO-1205", "vendor_name": "Global Office Supply", "description": "Warehouse consumables", "amount": 890.0, "currency": "USD", "issued": "2026-10-20", "status": "open"}, "score": 0, "why": [], "ref_exact": false, "diff_pct": 38.71460674157303, "amount": 1234.56}, {"po": {"po_id": "PO-1310", "vendor_name": "TechParts Inc", "description": "Replacement circuit boards (part #4471)", "amount": 5100.0, "currency": "USD", "issued": "2026-09-28", "status": "open"}, "score": 0, "why": [], "ref_exact": false, "diff_pct": 75.79294117647059, "amount": 1234.56}, {"po": {"po_id": "PO-1402", "vendor_name": "Metro Facilities Corp", "description": "Facility maintenance contract \u2014 3-month split billing (issued 3 POs)", "amount": 4000.0, "currency": "USD", "issued": "2026-10-01", "status": "open"}, "score": 0, "why": [], "ref_exact": false, "diff_pct": 69.136, "amount": 1234.56}], "explanation": "Invoice INV-2026-0148 from ACME INDUSTRIAL SUPPLY LTD., 1,234.56 USD. Matched PO PO-1101 (exact-ref). Amount within tolerance, vendor approved, no duplicates, no missing critical fields. Safe to queue for payment.", "extracted": {"text_source": "text-layer", "ocr_seconds": 0.01, "confidence": 0.9, "pages": 1, "invoice_number": "INV-2026-0148", "invoice_date": "2026-10-12", "due_date": "2026-11-11", "vendor_name": "ACME INDUSTRIAL SUPPLY LTD.", "vendor_tax_id": "98-7654321", "po_refs": ["PO-1101"], "currency": "USD", "line_items": [{"name": "Steel brackets, 12-gauge (part #A-118)", "qty": "120", "unit_price": 4.1, "amount": 492.0, "raw": "Steel brackets, 12-gauge (part #A-118) 120 $4.10 $492.00", "line_no": 15}, {"name": "Hex bolts M10x40, zinc, bulk", "qty": "2000", "unit_price": 0.36, "amount": 720.0, "raw": "Hex bolts M10x40, zinc, bulk 2000 $0.36 $720.00", "line_no": 16}, {"name": "Anti-vibration mounts, medium", "qty": "12", "unit_price": 1.88, "amount": 22.56, "raw": "Anti-vibration mounts, medium 12 $1.88 $22.56", "line_no": 17}], "total_from_lines": 1234.56, "total_printed": 1234.56, "subtotal": 1234.56, "tax_amount": 98.0, "evidence": {"po_refs": ["PO Number: PO-1101"], "tax_id": "Tax ID: 98-7654321", "invoice_number": "Invoice Number: INV-2026-0148", "invoice_date": "Invoice Date: 2026-10-12", "due_date": "Due Date: 2026-11-11", "total_from_lines": "sum of 3 line items", "total_printed": "Total Due $1,234.56", "subtotal": "Subtotal $1,234.56", "tax_amount": "1800 Commerce Blvd, Dayton, OH 45402 \u00b7 +1 (937) 555-0142 \u00b7 Tax ID: 98-7654321"}}, "split_billing": false, "duplicates": [], "rules_applied": {"amount_tolerance_pct": 2.0, "absolute_tolerance": 5.0, "split_billing_pct": 5.0, "hold_after_seconds": 180, "duplicate_window_days": 365, "require_invoice_number": true, "max_line_item_total_delta_pct": 1.0}}}, {"file": "02-duplicate.pdf", "description": "invoice number already in processed register \u2014 expect REJECT (duplicate)", "expected": "REJECT (duplicate)", "run_id": "432d58a8782d", "events": [{"stage": "ingest", "type": "stage-start", "name": "Ingest & classify", "detail": "02-duplicate.pdf", "size_kb": 2, "pages": 1}, {"stage": "extract", "type": "text-source", "source": "text-layer", "seconds": 0.02, "confidence": 0.9, "chars": 744}, {"stage": "ingest", "type": "classify", "kind": "digital", "detail": "machine-readable text layer found \u2014 treat as digital invoice"}, {"stage": "fields", "type": "fields", "fields": {"text_source": "text-layer", "ocr_seconds": 0.02, "confidence": 0.9, "pages": 1, "invoice_number": "INV-2026-0142", "invoice_date": "2026-10-21", "due_date": "2026-11-20", "vendor_name": "GLOBAL OFFICE SUPPLY", "vendor_tax_id": "11-2233445", "po_refs": ["PO-1205"], "currency": "USD", "line_items": 4, "total_from_lines": 890.0, "total_printed": 890.0, "subtotal": 890.0, "tax_amount": 11.0, "evidence": {"po_refs": ["PO Ref: PO-1205"], "tax_id": "Tax ID: 11-2233445", "invoice_number": "No: INV-2026-0142", "invoice_date": "Date: 10/21/2026", "due_date": "Due: 11/20/2026", "total_from_lines": "sum of 4 line items", "total_printed": "Total Due $890.00", "subtotal": "Subtotal $890.00", "tax_amount": "PO Box 447, Columbus, OH 43216 \u00b7 www.globalofficesupply.com \u00b7 Tax ID: 11-2233445"}}, "notes": ["vendor name inferred via letterhead heuristic (largest text on page 1)", "4 line items extracted; line-item total 890.00", "printed total 890.00 read from line: \"Total Due $890.00\"", "subtotal 890.00 + tax 11.00 = 901.00 (tax separated)", "printed total matches sum of line items \u2713"], "warnings": []}, {"stage": "quality", "type": "gate", "result": "pass", "detail": "all critical fields present"}, {"stage": "matching", "type": "match", "matched_po": "PO-1205", "match_type": "exact-ref", "note": "PO PO-1205 matched by explicit reference on the invoice", "candidates": [{"po_id": "PO-1205", "vendor": "Global Office Supply", "po_amount": 890.0, "score": 155, "why": ["explicit PO reference \"PO-1205\" on the invoice", "vendor name \"GLOBAL OFFICE SUPPLY\" matches PO vendor \"Global Office Supply\"", "invoice total 890.00 within 2.0% of PO 890.00"], "diff_pct": 0.0}, {"po_id": "PO-1204", "vendor": "Global Office Supply", "po_amount": 4320.0, "score": 30, "why": ["vendor name \"GLOBAL OFFICE SUPPLY\" matches PO vendor \"Global Office Supply\""], "diff_pct": 79.39814814814815}, {"po_id": "PO-1101", "vendor": "Acme Industrial Supply Ltd.", "po_amount": 1234.56, "score": 0, "why": [], "diff_pct": 27.90953862104717}, {"po_id": "PO-1310", "vendor": "TechParts Inc", "po_amount": 5100.0, "score": 0, "why": [], "diff_pct": 82.54901960784314}, {"po_id": "PO-1402", "vendor": "Metro Facilities Corp", "po_amount": 4000.0, "score": 0, "why": [], "diff_pct": 77.75}]}, {"stage": "validation", "type": "rules", "rules": {"amount_tolerance_pct": 2.0, "absolute_tolerance": 5.0, "split_billing_pct": 5.0, "hold_after_seconds": 180, "duplicate_window_days": 365, "require_invoice_number": true, "max_line_item_total_delta_pct": 1.0}, "duplicates": [{"invoice_number": "INV-2026-0142", "vendor_name": "Global Office Supply", "po_id": "PO-1205", "amount": 890.0, "currency": "USD", "issued": "2026-10-21", "status": "paid"}], "split_billing": false}, {"stage": "decision", "type": "decision", "status": "REJECT", "reasons": ["DUPLICATE \u2014 invoice INV-2026-0142 was already processed on 2026-10-21 against PO-1205 (paid)"], "issues": [{"code": "DUPLICATE_INVOICE", "severity": "blocker", "message": "DUPLICATE \u2014 invoice INV-2026-0142 was already processed on 2026-10-21 against PO-1205 (paid)"}], "explanation": "Refused to pay: the same invoice number from the same vendor already exists in the processed-invoice register in a paid/approved state. A duplicate is the single most common AP fraud pattern and the cheapest one to catch \u2014 so this rule is deliberately hard: it rejects outright instead of routing to review.", "elapsed_s": 0.04}], "decision": {"status": "REJECT", "reasons": ["DUPLICATE \u2014 invoice INV-2026-0142 was already processed on 2026-10-21 against PO-1205 (paid)"], "issues": [{"code": "DUPLICATE_INVOICE", "severity": "blocker", "message": "DUPLICATE \u2014 invoice INV-2026-0142 was already processed on 2026-10-21 against PO-1205 (paid)"}], "matched_po": {"po_id": "PO-1205", "vendor_name": "Global Office Supply", "description": "Warehouse consumables", "amount": 890.0, "currency": "USD", "issued": "2026-10-20", "status": "open"}, "match_type": "exact-ref", "amount_to_pay": null, "po_candidates": [{"po": {"po_id": "PO-1205", "vendor_name": "Global Office Supply", "description": "Warehouse consumables", "amount": 890.0, "currency": "USD", "issued": "2026-10-20", "status": "open"}, "score": 155, "why": ["explicit PO reference \"PO-1205\" on the invoice", "vendor name \"GLOBAL OFFICE SUPPLY\" matches PO vendor \"Global Office Supply\"", "invoice total 890.00 within 2.0% of PO 890.00"], "ref_exact": true, "diff_pct": 0.0, "amount": 890.0}, {"po": {"po_id": "PO-1204", "vendor_name": "Global Office Supply", "description": "Office supplies \u2014 Q4 replenishment", "amount": 4320.0, "currency": "USD", "issued": "2026-10-15", "status": "open"}, "score": 30, "why": ["vendor name \"GLOBAL OFFICE SUPPLY\" matches PO vendor \"Global Office Supply\""], "ref_exact": false, "diff_pct": 79.39814814814815, "amount": 890.0}, {"po": {"po_id": "PO-1101", "vendor_name": "Acme Industrial Supply Ltd.", "description": "Steel brackets & fasteners \u2014 Production line 3", "amount": 1234.56, "currency": "USD", "issued": "2026-10-01", "status": "open"}, "score": 0, "why": [], "ref_exact": false, "diff_pct": 27.90953862104717, "amount": 890.0}, {"po": {"po_id": "PO-1310", "vendor_name": "TechParts Inc", "description": "Replacement circuit boards (part #4471)", "amount": 5100.0, "currency": "USD", "issued": "2026-09-28", "status": "open"}, "score": 0, "why": [], "ref_exact": false, "diff_pct": 82.54901960784314, "amount": 890.0}, {"po": {"po_id": "PO-1402", "vendor_name": "Metro Facilities Corp", "description": "Facility maintenance contract \u2014 3-month split billing (issued 3 POs)", "amount": 4000.0, "currency": "USD", "issued": "2026-10-01", "status": "open"}, "score": 0, "why": [], "ref_exact": false, "diff_pct": 77.75, "amount": 890.0}], "explanation": "Refused to pay: the same invoice number from the same vendor already exists in the processed-invoice register in a paid/approved state. A duplicate is the single most common AP fraud pattern and the cheapest one to catch \u2014 so this rule is deliberately hard: it rejects outright instead of routing to review.", "extracted": {"text_source": "text-layer", "ocr_seconds": 0.02, "confidence": 0.9, "pages": 1, "invoice_number": "INV-2026-0142", "invoice_date": "2026-10-21", "due_date": "2026-11-20", "vendor_name": "GLOBAL OFFICE SUPPLY", "vendor_tax_id": "11-2233445", "po_refs": ["PO-1205"], "currency": "USD", "line_items": [{"name": "Warehouse boxes, corrugated 20x12x10 (pallet)", "qty": "1", "unit_price": 540.0, "amount": 540.0, "raw": "Warehouse boxes, corrugated 20x12x10 (pallet)1 $540.00 $540.00", "line_no": 15}, {"name": "Stretch wrap rolls, 18\"", "qty": "8", "unit_price": 24.5, "amount": 196.0, "raw": "Stretch wrap rolls, 18\" 8 $24.50 $196.00", "line_no": 16}, {"name": "Safety gloves, nitrile L (case of 200)", "qty": "1", "unit_price": 120.0, "amount": 120.0, "raw": "Safety gloves, nitrile L (case of 200) 1 $120.00 $120.00", "line_no": 17}, {"name": "Shrink-sealer refills", "qty": "1", "unit_price": 34.0, "amount": 34.0, "raw": "Shrink-sealer refills 1 $34.00 $34.00", "line_no": 18}], "total_from_lines": 890.0, "total_printed": 890.0, "subtotal": 890.0, "tax_amount": 11.0, "evidence": {"po_refs": ["PO Ref: PO-1205"], "tax_id": "Tax ID: 11-2233445", "invoice_number": "No: INV-2026-0142", "invoice_date": "Date: 10/21/2026", "due_date": "Due: 11/20/2026", "total_from_lines": "sum of 4 line items", "total_printed": "Total Due $890.00", "subtotal": "Subtotal $890.00", "tax_amount": "PO Box 447, Columbus, OH 43216 \u00b7 www.globalofficesupply.com \u00b7 Tax ID: 11-2233445"}}, "split_billing": false, "duplicates": [{"invoice_number": "INV-2026-0142", "vendor_name": "Global Office Supply", "po_id": "PO-1205", "amount": 890.0, "currency": "USD", "issued": "2026-10-21", "status": "paid"}], "rules_applied": {"amount_tolerance_pct": 2.0, "absolute_tolerance": 5.0, "split_billing_pct": 5.0, "hold_after_seconds": 180, "duplicate_window_days": 365, "require_invoice_number": true, "max_line_item_total_delta_pct": 1.0}}}, {"file": "03-split-billing.pdf", "description": "tranche 2 of 3 against a larger PO \u2014 expect REVIEW (under PO, split billing)", "expected": "REVIEW (under PO, split billing)", "run_id": "1f12b762307f", "events": [{"stage": "ingest", "type": "stage-start", "name": "Ingest & classify", "detail": "03-split-billing.pdf", "size_kb": 2, "pages": 1}, {"stage": "extract", "type": "text-source", "source": "text-layer", "seconds": 0.04, "confidence": 0.9, "chars": 863}, {"stage": "ingest", "type": "classify", "kind": "digital", "detail": "machine-readable text layer found \u2014 treat as digital invoice"}, {"stage": "fields", "type": "fields", "fields": {"text_source": "text-layer", "ocr_seconds": 0.04, "confidence": 0.9, "pages": 1, "invoice_number": "INV-2026-0231", "invoice_date": "2026-10-27", "due_date": "2026-11-26", "vendor_name": "METRO FACILITIES CORP", "vendor_tax_id": "22-3344556", "po_refs": ["PO-1403"], "currency": "USD", "line_items": 3, "total_from_lines": 3900.0, "total_printed": 3900.0, "subtotal": 3900.0, "tax_amount": 22.0, "evidence": {"po_refs": ["purchase order PO-1403"], "tax_id": "Tax ID 22-3344556", "invoice_number": "Invoice No: INV-2026-0231", "invoice_date": "Invoice Date: 10/27/2026", "due_date": "Due: NET 30 \u2014 11/26/2026", "total_from_lines": "sum of 3 line items", "total_printed": "Total Due $3,900.00", "subtotal": "Subtotal $3,900.00", "tax_amount": "2200 Harbor Drive, Cleveland, OH 44114 \u00b7 Tax ID 22-3344556 \u00b7 billing@metrofac.com"}}, "notes": ["vendor name inferred via letterhead heuristic (largest text on page 1)", "3 line items extracted; line-item total 3,900.00", "printed total 3,900.00 read from line: \"Total Due $3,900.00\"", "subtotal 3,900.00 + tax 22.00 = 3,922.00 (tax separated)", "printed total matches sum of line items \u2713"], "warnings": []}, {"stage": "quality", "type": "gate", "result": "pass", "detail": "all critical fields present"}, {"stage": "matching", "type": "match", "matched_po": "PO-1403", "match_type": "exact-ref", "note": "PO PO-1403 matched by explicit reference on the invoice", "candidates": [{"po_id": "PO-1403", "vendor": "Metro Facilities Corp", "po_amount": 5000.0, "score": 130, "why": ["explicit PO reference \"PO-1403\" on the invoice", "vendor name \"METRO FACILITIES CORP\" matches PO vendor \"Metro Facilities Corp\""], "diff_pct": 22.0}, {"po_id": "PO-1402", "vendor": "Metro Facilities Corp", "po_amount": 4000.0, "score": 30, "why": ["vendor name \"METRO FACILITIES CORP\" matches PO vendor \"Metro Facilities Corp\""], "diff_pct": 2.5}, {"po_id": "PO-1404", "vendor": "Metro Facilities Corp", "po_amount": 4800.0, "score": 30, "why": ["vendor name \"METRO FACILITIES CORP\" matches PO vendor \"Metro Facilities Corp\""], "diff_pct": 18.75}, {"po_id": "PO-1101", "vendor": "Acme Industrial Supply Ltd.", "po_amount": 1234.56, "score": 0, "why": [], "diff_pct": 215.90202177293935}, {"po_id": "PO-1204", "vendor": "Global Office Supply", "po_amount": 4320.0, "score": 0, "why": [], "diff_pct": 9.722222222222223}]}, {"stage": "validation", "type": "rules", "rules": {"amount_tolerance_pct": 2.0, "absolute_tolerance": 5.0, "split_billing_pct": 5.0, "hold_after_seconds": 180, "duplicate_window_days": 365, "require_invoice_number": true, "max_line_item_total_delta_pct": 1.0}, "duplicates": [], "split_billing": false}, {"stage": "decision", "type": "decision", "status": "REVIEW", "reasons": ["UNDER PO \u2014 invoice 3,900.00 is 1,100.00 (22.0%) below PO 5,000.00; could be a partial/split invoice or an amount error \u2014 confirm the billing schedule before payment"], "issues": [{"code": "UNDER_PO", "severity": "warning", "message": "UNDER PO \u2014 invoice 3,900.00 is 1,100.00 (22.0%) below PO 5,000.00; could be a partial/split invoice or an amount error \u2014 confirm the billing schedule before payment"}], "explanation": "Requires human triage: UNDER PO \u2014 invoice 3,900.00 is 1,100.00 (22.0%) below PO 5,000.00; could be a partial/split invoice or an amount error \u2014 confirm the billing schedule before payment", "elapsed_s": 0.06}], "decision": {"status": "REVIEW", "reasons": ["UNDER PO \u2014 invoice 3,900.00 is 1,100.00 (22.0%) below PO 5,000.00; could be a partial/split invoice or an amount error \u2014 confirm the billing schedule before payment"], "issues": [{"code": "UNDER_PO", "severity": "warning", "message": "UNDER PO \u2014 invoice 3,900.00 is 1,100.00 (22.0%) below PO 5,000.00; could be a partial/split invoice or an amount error \u2014 confirm the billing schedule before payment"}], "matched_po": {"po_id": "PO-1403", "vendor_name": "Metro Facilities Corp", "description": "Facility maintenance contract \u2014 3-month split billing (issued 3 POs)", "amount": 5000.0, "currency": "USD", "issued": "2026-10-01", "status": "open"}, "match_type": "exact-ref", "amount_to_pay": 3900.0, "po_candidates": [{"po": {"po_id": "PO-1403", "vendor_name": "Metro Facilities Corp", "description": "Facility maintenance contract \u2014 3-month split billing (issued 3 POs)", "amount": 5000.0, "currency": "USD", "issued": "2026-10-01", "status": "open"}, "score": 130, "why": ["explicit PO reference \"PO-1403\" on the invoice", "vendor name \"METRO FACILITIES CORP\" matches PO vendor \"Metro Facilities Corp\""], "ref_exact": true, "diff_pct": 22.0, "amount": 3900.0}, {"po": {"po_id": "PO-1402", "vendor_name": "Metro Facilities Corp", "description": "Facility maintenance contract \u2014 3-month split billing (issued 3 POs)", "amount": 4000.0, "currency": "USD", "issued": "2026-10-01", "status": "open"}, "score": 30, "why": ["vendor name \"METRO FACILITIES CORP\" matches PO vendor \"Metro Facilities Corp\""], "ref_exact": false, "diff_pct": 2.5, "amount": 3900.0}, {"po": {"po_id": "PO-1404", "vendor_name": "Metro Facilities Corp", "description": "Facility maintenance contract \u2014 3-month split billing (issued 3 POs)", "amount": 4800.0, "currency": "USD", "issued": "2026-10-01", "status": "open"}, "score": 30, "why": ["vendor name \"METRO FACILITIES CORP\" matches PO vendor \"Metro Facilities Corp\""], "ref_exact": false, "diff_pct": 18.75, "amount": 3900.0}, {"po": {"po_id": "PO-1101", "vendor_name": "Acme Industrial Supply Ltd.", "description": "Steel brackets & fasteners \u2014 Production line 3", "amount": 1234.56, "currency": "USD", "issued": "2026-10-01", "status": "open"}, "score": 0, "why": [], "ref_exact": false, "diff_pct": 215.90202177293935, "amount": 3900.0}, {"po": {"po_id": "PO-1204", "vendor_name": "Global Office Supply", "description": "Office supplies \u2014 Q4 replenishment", "amount": 4320.0, "currency": "USD", "issued": "2026-10-15", "status": "open"}, "score": 0, "why": [], "ref_exact": false, "diff_pct": 9.722222222222223, "amount": 3900.0}], "explanation": "Requires human triage: UNDER PO \u2014 invoice 3,900.00 is 1,100.00 (22.0%) below PO 5,000.00; could be a partial/split invoice or an amount error \u2014 confirm the billing schedule before payment", "extracted": {"text_source": "text-layer", "ocr_seconds": 0.04, "confidence": 0.9, "pages": 1, "invoice_number": "INV-2026-0231", "invoice_date": "2026-10-27", "due_date": "2026-11-26", "vendor_name": "METRO FACILITIES CORP", "vendor_tax_id": "22-3344556", "po_refs": ["PO-1403"], "currency": "USD", "line_items": [{"name": "Maintenance \u2014 October cycle (parts & labor)", "qty": "1", "unit_price": 2450.0, "amount": 2450.0, "raw": "Maintenance \u2014 October cycle (parts & labor) 1 $2,450.00 $2,450.00", "line_no": 14}, {"name": "HVAC filter replacement, 12 units", "qty": "12", "unit_price": 79.17, "amount": 950.0, "raw": "HVAC filter replacement, 12 units 12 $79.17 $950.00", "line_no": 15}, {"name": "Emergency call-out \u2014 chiller #2", "qty": "1", "unit_price": 500.0, "amount": 500.0, "raw": "Emergency call-out \u2014 chiller #2 1 $500.00 $500.00", "line_no": 16}], "total_from_lines": 3900.0, "total_printed": 3900.0, "subtotal": 3900.0, "tax_amount": 22.0, "evidence": {"po_refs": ["purchase order PO-1403"], "tax_id": "Tax ID 22-3344556", "invoice_number": "Invoice No: INV-2026-0231", "invoice_date": "Invoice Date: 10/27/2026", "due_date": "Due: NET 30 \u2014 11/26/2026", "total_from_lines": "sum of 3 line items", "total_printed": "Total Due $3,900.00", "subtotal": "Subtotal $3,900.00", "tax_amount": "2200 Harbor Drive, Cleveland, OH 44114 \u00b7 Tax ID 22-3344556 \u00b7 billing@metrofac.com"}}, "split_billing": false, "duplicates": [], "rules_applied": {"amount_tolerance_pct": 2.0, "absolute_tolerance": 5.0, "split_billing_pct": 5.0, "hold_after_seconds": 180, "duplicate_window_days": 365, "require_invoice_number": true, "max_line_item_total_delta_pct": 1.0}}}, {"file": "04-missing-fields.pdf", "description": "no invoice number, no date, PO only in narrative \u2014 expect REVIEW (missing fields)", "expected": "REVIEW (missing fields)", "run_id": "ebdbd1e57218", "events": [{"stage": "ingest", "type": "stage-start", "name": "Ingest & classify", "detail": "04-missing-fields.pdf", "size_kb": 2, "pages": 1}, {"stage": "extract", "type": "text-source", "source": "text-layer", "seconds": 0.02, "confidence": 0.9, "chars": 585}, {"stage": "ingest", "type": "classify", "kind": "digital", "detail": "machine-readable text layer found \u2014 treat as digital invoice"}, {"stage": "fields", "type": "fields", "fields": {"text_source": "text-layer", "ocr_seconds": 0.02, "confidence": 0.9, "pages": 1, "invoice_number": null, "invoice_date": null, "due_date": null, "vendor_name": "TECHPARTS INC", "vendor_tax_id": "44-5566778", "po_refs": ["PO-1310"], "currency": "USD", "line_items": 2, "total_from_lines": 5100.0, "total_printed": 5100.0, "subtotal": 5100.0, "tax_amount": 44.0, "evidence": {"po_refs": ["purchase order PO-1310"], "tax_id": "Tax ID: 44-5566778", "invoice_date": "Thank you for your business. Payment terms: NET 30 from invoice date.", "total_from_lines": "sum of 2 line items", "total_printed": "Total Due $5,100.00", "subtotal": "Subtotal $5,100.00", "tax_amount": "Tax ID: 44-5566778"}}, "notes": ["vendor name inferred via letterhead heuristic (largest text on page 1)", "2 line items extracted; line-item total 5,100.00", "printed total 5,100.00 read from line: \"Total Due $5,100.00\"", "subtotal 5,100.00 + tax 44.00 = 5,144.00 (tax separated)", "printed total matches sum of line items \u2713"], "warnings": ["No invoice number found \u2014 duplicate detection now limited to vendor+total", "missing critical field(s): invoice_number, invoice_date"]}, {"stage": "quality", "type": "gate", "result": "degraded", "missing": ["invoice_number", "invoice_date"], "detail": "2 critical field(s) missing \u2014 continuing in degraded mode"}, {"stage": "matching", "type": "match", "matched_po": "PO-1310", "match_type": "exact-ref", "note": "PO PO-1310 matched by explicit reference on the invoice", "candidates": [{"po_id": "PO-1310", "vendor": "TechParts Inc", "po_amount": 5100.0, "score": 155, "why": ["explicit PO reference \"PO-1310\" on the invoice", "vendor name \"TECHPARTS INC\" matches PO vendor \"TechParts Inc\"", "invoice total 5,100.00 within 2.0% of PO 5,100.00"], "diff_pct": 0.0}, {"po_id": "PO-1403", "vendor": "Metro Facilities Corp", "po_amount": 5000.0, "score": 25, "why": ["invoice total 5,100.00 within 2.0% of PO 5,000.00"], "diff_pct": 2.0}, {"po_id": "PO-1101", "vendor": "Acme Industrial Supply Ltd.", "po_amount": 1234.56, "score": 0, "why": [], "diff_pct": 313.1026438569207}, {"po_id": "PO-1204", "vendor": "Global Office Supply", "po_amount": 4320.0, "score": 0, "why": [], "diff_pct": 18.055555555555554}, {"po_id": "PO-1205", "vendor": "Global Office Supply", "po_amount": 890.0, "score": 0, "why": [], "diff_pct": 473.03370786516854}]}, {"stage": "validation", "type": "rules", "rules": {"amount_tolerance_pct": 2.0, "absolute_tolerance": 5.0, "split_billing_pct": 5.0, "hold_after_seconds": 180, "duplicate_window_days": 365, "require_invoice_number": true, "max_line_item_total_delta_pct": 1.0}, "duplicates": [], "split_billing": false}, {"stage": "decision", "type": "decision", "status": "REVIEW", "reasons": ["AMOUNT OK \u2014 invoice 5,100.00 vs PO 5,100.00 (diff 0.00%, tolerance \u00b12.0%)", "MISSING FIELDS \u2014 no invoice number on the document", "MISSING FIELDS \u2014 no invoice date"], "issues": [{"code": "MISSING_INVOICE_NO", "severity": "blocker", "message": "No invoice number \u2014 duplicate detection is weakened; request a corrected invoice or log manually"}, {"code": "MISSING_DATE", "severity": "warning", "message": "No invoice date found"}], "explanation": "Requires human triage: No invoice number \u2014 duplicate detection is weakened; request a corrected invoice or log manually | No invoice date found", "elapsed_s": 0.04}], "decision": {"status": "REVIEW", "reasons": ["AMOUNT OK \u2014 invoice 5,100.00 vs PO 5,100.00 (diff 0.00%, tolerance \u00b12.0%)", "MISSING FIELDS \u2014 no invoice number on the document", "MISSING FIELDS \u2014 no invoice date"], "issues": [{"code": "MISSING_INVOICE_NO", "severity": "blocker", "message": "No invoice number \u2014 duplicate detection is weakened; request a corrected invoice or log manually"}, {"code": "MISSING_DATE", "severity": "warning", "message": "No invoice date found"}], "matched_po": {"po_id": "PO-1310", "vendor_name": "TechParts Inc", "description": "Replacement circuit boards (part #4471)", "amount": 5100.0, "currency": "USD", "issued": "2026-09-28", "status": "open"}, "match_type": "exact-ref", "amount_to_pay": 5100.0, "po_candidates": [{"po": {"po_id": "PO-1310", "vendor_name": "TechParts Inc", "description": "Replacement circuit boards (part #4471)", "amount": 5100.0, "currency": "USD", "issued": "2026-09-28", "status": "open"}, "score": 155, "why": ["explicit PO reference \"PO-1310\" on the invoice", "vendor name \"TECHPARTS INC\" matches PO vendor \"TechParts Inc\"", "invoice total 5,100.00 within 2.0% of PO 5,100.00"], "ref_exact": true, "diff_pct": 0.0, "amount": 5100.0}, {"po": {"po_id": "PO-1403", "vendor_name": "Metro Facilities Corp", "description": "Facility maintenance contract \u2014 3-month split billing (issued 3 POs)", "amount": 5000.0, "currency": "USD", "issued": "2026-10-01", "status": "open"}, "score": 25, "why": ["invoice total 5,100.00 within 2.0% of PO 5,000.00"], "ref_exact": false, "diff_pct": 2.0, "amount": 5100.0}, {"po": {"po_id": "PO-1101", "vendor_name": "Acme Industrial Supply Ltd.", "description": "Steel brackets & fasteners \u2014 Production line 3", "amount": 1234.56, "currency": "USD", "issued": "2026-10-01", "status": "open"}, "score": 0, "why": [], "ref_exact": false, "diff_pct": 313.1026438569207, "amount": 5100.0}, {"po": {"po_id": "PO-1204", "vendor_name": "Global Office Supply", "description": "Office supplies \u2014 Q4 replenishment", "amount": 4320.0, "currency": "USD", "issued": "2026-10-15", "status": "open"}, "score": 0, "why": [], "ref_exact": false, "diff_pct": 18.055555555555554, "amount": 5100.0}, {"po": {"po_id": "PO-1205", "vendor_name": "Global Office Supply", "description": "Warehouse consumables", "amount": 890.0, "currency": "USD", "issued": "2026-10-20", "status": "open"}, "score": 0, "why": [], "ref_exact": false, "diff_pct": 473.03370786516854, "amount": 5100.0}], "explanation": "Requires human triage: No invoice number \u2014 duplicate detection is weakened; request a corrected invoice or log manually | No invoice date found", "extracted": {"text_source": "text-layer", "ocr_seconds": 0.02, "confidence": 0.9, "pages": 1, "invoice_number": null, "invoice_date": null, "due_date": null, "vendor_name": "TECHPARTS INC", "vendor_tax_id": "44-5566778", "po_refs": ["PO-1310"], "currency": "USD", "line_items": [{"name": "Circuit board assembly #4471", "qty": "40", "unit_price": 118.75, "amount": 4750.0, "raw": "Circuit board assembly #4471 40 $118.75 $4,750.00", "line_no": 12}, {"name": "Calibration & test certification", "qty": "1", "unit_price": 350.0, "amount": 350.0, "raw": "Calibration & test certification 1 $350.00 $350.00", "line_no": 13}], "total_from_lines": 5100.0, "total_printed": 5100.0, "subtotal": 5100.0, "tax_amount": 44.0, "evidence": {"po_refs": ["purchase order PO-1310"], "tax_id": "Tax ID: 44-5566778", "invoice_date": "Thank you for your business. Payment terms: NET 30 from invoice date.", "total_from_lines": "sum of 2 line items", "total_printed": "Total Due $5,100.00", "subtotal": "Subtotal $5,100.00", "tax_amount": "Tax ID: 44-5566778"}}, "split_billing": false, "duplicates": [], "rules_applied": {"amount_tolerance_pct": 2.0, "absolute_tolerance": 5.0, "split_billing_pct": 5.0, "hold_after_seconds": 180, "duplicate_window_days": 365, "require_invoice_number": true, "max_line_item_total_delta_pct": 1.0}}}, {"file": "05-scanned.pdf", "description": "image-only PDF, no text layer \u2014 expect PAY via OCR path", "expected": "PAY via OCR path", "run_id": "d8b4ca3b4c97", "events": [{"stage": "ingest", "type": "stage-start", "name": "Ingest & classify", "detail": "05-scanned.pdf", "size_kb": 144, "pages": 1}, {"stage": "extract", "type": "text-source", "source": "ocr-tesseract", "seconds": 1.55, "confidence": 0.6, "chars": 678}, {"stage": "ingest", "type": "classify", "kind": "scanned-or-image", "detail": "no usable text layer \u2014 scanned/image invoice; OCR fallback path"}, {"stage": "fields", "type": "fields", "fields": {"text_source": "ocr-tesseract", "ocr_seconds": 1.55, "confidence": 0.6, "pages": 1, "invoice_number": "INV-2026-0209", "invoice_date": "2026-10-05", "due_date": "2026-11-04", "vendor_name": "METRO FACILITIES CORP", "vendor_tax_id": "22-3344556", "po_refs": ["PO-1402"], "currency": "USD", "line_items": 2, "total_from_lines": 4000.0, "total_printed": 4000.0, "subtotal": 4000.0, "tax_amount": 22.0, "evidence": {"po_refs": ["PO Reference: PO-1402"], "tax_id": "Tax ID 22-3344556", "invoice_number": "Invoice No: INV-2026-0209", "invoice_date": "Invoice Date: 10/05/2026", "due_date": "Due: NET 30 \u2014 11/04/2026", "total_from_lines": "sum of 2 line items", "total_printed": "TOTAL DUE: $4,000.00 - Tranches 2 and 3 to follow", "subtotal": "Subtotal $4,000.00", "tax_amount": "2200 Harbor Drive, Cleveland, OH 44114 - Tax ID 22-3344556"}}, "notes": ["vendor name inferred via OCR top-line heuristic (scan read top-to-bottom); lower trust", "2 line items extracted; line-item total 4,000.00", "printed total 4,000.00 read from line: \"TOTAL DUE: $4,000.00 - Tranches 2 and 3 to follow\"", "subtotal 4,000.00 + tax 22.00 = 4,022.00 (tax separated)", "printed total matches sum of line items \u2713"], "warnings": []}, {"stage": "quality", "type": "gate", "result": "pass", "detail": "all critical fields present"}, {"stage": "quality", "type": "ocr-confidence", "result": "degraded", "detail": "fields came from OCR (ocr-tesseract); confidence lowered to 0.6"}, {"stage": "matching", "type": "match", "matched_po": "PO-1402", "match_type": "exact-ref", "note": "PO PO-1402 matched by explicit reference on the invoice", "candidates": [{"po_id": "PO-1402", "vendor": "Metro Facilities Corp", "po_amount": 4000.0, "score": 155, "why": ["explicit PO reference \"PO-1402\" on the invoice", "vendor name \"METRO FACILITIES CORP\" matches PO vendor \"Metro Facilities Corp\"", "invoice total 4,000.00 within 2.0% of PO 4,000.00"], "diff_pct": 0.0}, {"po_id": "PO-1403", "vendor": "Metro Facilities Corp", "po_amount": 5000.0, "score": 30, "why": ["vendor name \"METRO FACILITIES CORP\" matches PO vendor \"Metro Facilities Corp\""], "diff_pct": 20.0}, {"po_id": "PO-1404", "vendor": "Metro Facilities Corp", "po_amount": 4800.0, "score": 30, "why": ["vendor name \"METRO FACILITIES CORP\" matches PO vendor \"Metro Facilities Corp\""], "diff_pct": 16.666666666666664}, {"po_id": "PO-1101", "vendor": "Acme Industrial Supply Ltd.", "po_amount": 1234.56, "score": 0, "why": [], "diff_pct": 224.00207361327116}, {"po_id": "PO-1204", "vendor": "Global Office Supply", "po_amount": 4320.0, "score": 0, "why": [], "diff_pct": 7.4074074074074066}]}, {"stage": "validation", "type": "rules", "rules": {"amount_tolerance_pct": 2.0, "absolute_tolerance": 5.0, "split_billing_pct": 5.0, "hold_after_seconds": 180, "duplicate_window_days": 365, "require_invoice_number": true, "max_line_item_total_delta_pct": 1.0}, "duplicates": [], "split_billing": false}, {"stage": "decision", "type": "decision", "status": "PAY", "reasons": ["AMOUNT OK \u2014 invoice 4,000.00 vs PO 4,000.00 (diff 0.00%, tolerance \u00b12.0%)"], "issues": [], "explanation": "Invoice INV-2026-0209 from METRO FACILITIES CORP, 4,000.00 USD. Matched PO PO-1402 (exact-ref). Amount within tolerance, vendor approved, no duplicates, no missing critical fields. Safe to queue for payment.", "elapsed_s": 1.56}], "decision": {"status": "PAY", "reasons": ["AMOUNT OK \u2014 invoice 4,000.00 vs PO 4,000.00 (diff 0.00%, tolerance \u00b12.0%)"], "issues": [], "matched_po": {"po_id": "PO-1402", "vendor_name": "Metro Facilities Corp", "description": "Facility maintenance contract \u2014 3-month split billing (issued 3 POs)", "amount": 4000.0, "currency": "USD", "issued": "2026-10-01", "status": "open"}, "match_type": "exact-ref", "amount_to_pay": 4000.0, "po_candidates": [{"po": {"po_id": "PO-1402", "vendor_name": "Metro Facilities Corp", "description": "Facility maintenance contract \u2014 3-month split billing (issued 3 POs)", "amount": 4000.0, "currency": "USD", "issued": "2026-10-01", "status": "open"}, "score": 155, "why": ["explicit PO reference \"PO-1402\" on the invoice", "vendor name \"METRO FACILITIES CORP\" matches PO vendor \"Metro Facilities Corp\"", "invoice total 4,000.00 within 2.0% of PO 4,000.00"], "ref_exact": true, "diff_pct": 0.0, "amount": 4000.0}, {"po": {"po_id": "PO-1403", "vendor_name": "Metro Facilities Corp", "description": "Facility maintenance contract \u2014 3-month split billing (issued 3 POs)", "amount": 5000.0, "currency": "USD", "issued": "2026-10-01", "status": "open"}, "score": 30, "why": ["vendor name \"METRO FACILITIES CORP\" matches PO vendor \"Metro Facilities Corp\""], "ref_exact": false, "diff_pct": 20.0, "amount": 4000.0}, {"po": {"po_id": "PO-1404", "vendor_name": "Metro Facilities Corp", "description": "Facility maintenance contract \u2014 3-month split billing (issued 3 POs)", "amount": 4800.0, "currency": "USD", "issued": "2026-10-01", "status": "open"}, "score": 30, "why": ["vendor name \"METRO FACILITIES CORP\" matches PO vendor \"Metro Facilities Corp\""], "ref_exact": false, "diff_pct": 16.666666666666664, "amount": 4000.0}, {"po": {"po_id": "PO-1101", "vendor_name": "Acme Industrial Supply Ltd.", "description": "Steel brackets & fasteners \u2014 Production line 3", "amount": 1234.56, "currency": "USD", "issued": "2026-10-01", "status": "open"}, "score": 0, "why": [], "ref_exact": false, "diff_pct": 224.00207361327116, "amount": 4000.0}, {"po": {"po_id": "PO-1204", "vendor_name": "Global Office Supply", "description": "Office supplies \u2014 Q4 replenishment", "amount": 4320.0, "currency": "USD", "issued": "2026-10-15", "status": "open"}, "score": 0, "why": [], "ref_exact": false, "diff_pct": 7.4074074074074066, "amount": 4000.0}], "explanation": "Invoice INV-2026-0209 from METRO FACILITIES CORP, 4,000.00 USD. Matched PO PO-1402 (exact-ref). Amount within tolerance, vendor approved, no duplicates, no missing critical fields. Safe to queue for payment.", "extracted": {"text_source": "ocr-tesseract", "ocr_seconds": 1.55, "confidence": 0.6, "pages": 1, "invoice_number": "INV-2026-0209", "invoice_date": "2026-10-05", "due_date": "2026-11-04", "vendor_name": "METRO FACILITIES CORP", "vendor_tax_id": "22-3344556", "po_refs": ["PO-1402"], "currency": "USD", "line_items": [{"name": "Maintenance \u2014 September cycle (labor)", "qty": "1", "unit_price": 2800.0, "amount": 2800.0, "raw": "Maintenance \u2014 September cycle (labor) 1 $2,800.00 $2,800.00", "line_no": 12}, {"name": "Roof membrane repair, east wing", "qty": "1", "unit_price": 1200.0, "amount": 1200.0, "raw": "Roof membrane repair, east wing 1 $1,200.00 $1,200.00", "line_no": 13}], "total_from_lines": 4000.0, "total_printed": 4000.0, "subtotal": 4000.0, "tax_amount": 22.0, "evidence": {"po_refs": ["PO Reference: PO-1402"], "tax_id": "Tax ID 22-3344556", "invoice_number": "Invoice No: INV-2026-0209", "invoice_date": "Invoice Date: 10/05/2026", "due_date": "Due: NET 30 \u2014 11/04/2026", "total_from_lines": "sum of 2 line items", "total_printed": "TOTAL DUE: $4,000.00 - Tranches 2 and 3 to follow", "subtotal": "Subtotal $4,000.00", "tax_amount": "2200 Harbor Drive, Cleveland, OH 44114 - Tax ID 22-3344556"}}, "split_billing": false, "duplicates": [], "rules_applied": {"amount_tolerance_pct": 2.0, "absolute_tolerance": 5.0, "split_billing_pct": 5.0, "hold_after_seconds": 180, "duplicate_window_days": 365, "require_invoice_number": true, "max_line_item_total_delta_pct": 1.0}}}];
+const STAGE_ORDER = ["stage-start","classify","text-source","fields","gate","ocr-confidence","total-mismatch","match","rules","decision"];
+let cur = -1;
+
+async function replayInit(){
+  // dashboard from recorded runs
+  await refreshDashFromRecorded();
+  document.getElementById('sample').innerHTML = RUNS.map((r,i)=>
+    `<option value="${i}">${r.file} — ${r.expected||''}</option>`).join('');
+  document.getElementById('sample').onchange = ()=>{
+    const r = RUNS[+document.getElementById('sample').value];
+    document.getElementById('sample-desc').textContent = r.description;
+  };
+  document.getElementById('sample-desc').textContent = RUNS[0].description;
+  document.getElementById('chip-llm').textContent = 'AI fallback: rules+OCR only';
+  // replace Run button behaviour with replay
+  window.startRun = async function(){
+    await replayRun(+document.getElementById('sample').value);
+  };
+  buildPipe();
+  document.getElementById('btn-run').textContent = '▶ Replay run';
+}
+
+async function refreshDashFromRecorded(){
+  document.getElementById('st-total').textContent = RUNS.length;
+  const c = {PAY:0,REVIEW:0,OTHER:0};
+  RUNS.forEach(r=>{ if(r.decision.status==='PAY')c.PAY++; else if(r.decision.status==='REVIEW')c.REVIEW++; else c.OTHER++; });
+  document.getElementById('st-pay').textContent = c.PAY;
+  document.getElementById('st-review').textContent = c.REVIEW;
+  document.getElementById('st-other').textContent = c.OTHER;
+  const tb = document.getElementById('runs-body');
+  tb.innerHTML = RUNS.map((r,i)=>
+    `<tr class="row" onclick="replayRun(${i})">
+      <td>${r.file}</td><td><span class="badge ${r.decision.status}">${r.decision.status}</span></td>
+      <td>${r.decision.matched_po?r.decision.matched_po.po_id:'—'}</td>
+      <td>${r.decision.amount_to_pay!=null?'$'+Number(r.decision.amount_to_pay).toLocaleString(undefined,{minimumFractionDigits:2}):'—'}</td>
+      <td>${r.decision.match_type||'—'}</td><td>↗</td></tr>`).join('');
+  // keep drawer working off recorded data
+  window.openRun = function(idx){
+    const r = RUNS[idx]; const d = r.decision;
+    document.getElementById('drawer-body').innerHTML = drawerHtml(d, r.events);
+    document.getElementById('drawer').classList.add('open');
+  };
+  // point dashboard rows at replayRun already; keep closeDrawer
+}
+
+function drawerHtml(d, events){
+  let html = `<div class="decision ${d.status}" style="display:block"><div class="d">${d.status}</div>
+    ${d.explanation?`<div>${d.explanation}</div>`:''}</div>
+    <h3>PO candidates scored</h3>`;
+  const cands = (d.po_candidates||[]).map(c=>({po_id:c.po&&c.po.po_id, vendor:c.po&&c.po.vendor_name, score:c.score, diff_pct:c.diff_pct}));
+  if (cands.length){
+    html += `<table><tr><th>PO</th><th>vendor</th><th>score</th><th>diff</th></tr>` +
+      cands.map(c=>`<tr><td>${c.po_id}</td><td>${c.vendor}</td><td>${c.score}</td><td>${c.diff_pct!=null?c.diff_pct.toFixed(1)+'%':'—'}</td></tr>`).join('') + '</table>';
+  } else html += '<div class="empty">no candidates</div>';
+  html += `<h3>Extracted fields</h3><div class="kv">`;
+  const e = d.extracted||{};
+  html += `<span class="k">invoice</span><span>${e.invoice_number||'—'}</span>
+    <span class="k">vendor</span><span>${e.vendor_name||'—'}</span>
+    <span class="k">date</span><span>${e.invoice_date||'—'}</span>
+    <span class="k">PO refs</span><span>${(e.po_refs||[]).join(', ')||'—'}</span>
+    <span class="k">total</span><span>${e.total_printed!=null?'$'+Number(e.total_printed).toLocaleString(undefined,{minimumFractionDigits:2}):'—'}</span>
+    <span class="k">line items</span><span>${(e.line_items||[]).length}</span>
+    <span class="k">source</span><span>${e.text_source||'—'} (conf ${e.confidence??'—'})</span>`;
+  html += `</div><h3>Reasons</h3><ul class="reasons">${(d.reasons||[]).map(x=>`<li>${x}</li>`).join('')||'<li>—</li>'}</ul>
+    <h3>Audit trail (${events.length} events)</h3><div class="log" style="max-height:200px">${events.map(ev=>
+      `<span class="${ev.result==='degraded'?'w':''}">[${ev.stage}] ${ev.type}: ${JSON.stringify(Object.fromEntries(Object.entries(ev).filter(([k])=>!['stage','type','name'].includes(k)))).slice(0,140)}</span>`
+    ).join('\n')}</div>`;
+  return html;
+}
+
+const sleep = ms => new Promise(r=>setTimeout(r,ms));
+async function replayRun(idx){
+  const r = RUNS[idx];
+  cur = idx;
+  document.getElementById('log').textContent = '';
+  document.getElementById('decision').style.display='none';
+  document.getElementById('decision').className='decision';
+  STAGES.forEach((_,i)=>setStage(i,''));
+  buildPipe();
+  document.getElementById('btn-run').disabled = true;
+  document.getElementById('run-meta').textContent = r.file;
+  for (const ev of r.events){
+    logEvent(ev);
+    if (ev.type==='decision'){ showDecision(ev.status, ev.reasons, ev.explanation, ev.issues); }
+    await sleep(ev.type==='decision'?400:260);
+  }
+  document.getElementById('btn-run').disabled = false;
+  // expose drawer for this run
+  window.openRun = (i)=>{ drawerOpen(RUNS[i]); };
+}
+function drawerOpen(r){
+  document.getElementById('drawer-body').innerHTML = drawerHtml(r.decision, r.events);
+  document.getElementById('drawer').classList.add('open');
+}
+
+// dashboard "open detail" -> drawer from recorded data
+const _origShow = show;
+show = function(v){ _origShow(v); };
+replayInit();
+
+</script>
+</body>
+</html>

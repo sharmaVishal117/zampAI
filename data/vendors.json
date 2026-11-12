@@ -1,0 +1,25 @@
+{
+  "APPROVED_VENDORS": [
+    {
+      "name": "Acme Industrial Supply Ltd.",
+      "aliases": ["Acme Industrial", "Acme Industrial Supply", "ACME"],
+      "tax_id": "98-7654321"
+    },
+    {
+      "name": "Global Office Supply",
+      "aliases": ["Global Office", "GOS"],
+      "tax_id": "11-2233445"
+    },
+    {
+      "name": "TechParts Inc",
+      "aliases": ["TechParts"],
+      "tax_id": "44-5566778"
+    },
+    {
+      "name": "Metro Facilities Corp",
+      "aliases": ["Metro Facilities"],
+      "tax_id": "22-3344556"
+    }
+  ],
+  "BLOCKED_VENDORS": []
+}
